@@ -1,212 +1,189 @@
+[Русский](README.ru.md) · **English**
+
 # QuickTab
 
 <img src="Resources/AppIcon-1024.png" width="128" alt="">
 
-**Alt+Tab как в Windows + скриншотер как Lightshot для macOS.**
+**Windows-style Alt+Tab plus a Lightshot-style screenshot tool for macOS.**
 
-Лёгкий переключатель окон для macOS в стиле Windows Alt+Tab.
+A lightweight macOS menu-bar app that switches windows the way Windows Alt+Tab does.
 
-**Возможности:** переключатель окон по `⌥Tab` / `⌘Tab` · необязательные превью окон · скриншоты со стоп-кадром · рисование поверх скриншота · распознавание текста (OCR) · закрепление скриншота поверх окон · пипетка цвета.
-Переключатель и скриншотер включаются и выключаются **независимо** в меню (иконка в строке меню): можно пользоваться только одним из них.
+**Features:** window switcher on `⌥Tab` / `⌘Tab` · optional window previews · freeze-frame screenshots · drawing on top of a screenshot · text recognition (OCR) · pinning a screenshot above other windows · color picker.
+The switcher and the screenshot tool are turned on and off **independently** from the menu-bar icon, so you can use just one of them.
 
-[**Скачать последнюю версию**](https://github.com/lockermon4/alttab-windows-screenshoter-for-mac/releases/latest) · [Как установить](#установка) · [English](#english)
+[**Download the latest version**](https://github.com/lockermon4/alttab-windows-screenshoter-for-mac/releases/latest) · [How to install](#install)
 
-## English
+- **Two ways to run it**, depending on the permissions you grant:
 
-QuickTab is a lightweight macOS menu-bar app: a Windows-style window switcher plus a Lightshot-style screenshot tool. Requires macOS 13+ (window previews and screenshots need macOS 14+).
-
-**Features**
-- Window switcher on `⌥Tab` or `⌘Tab` (replaces the system ⌘Tab while QuickTab runs; restored on quit). Never hangs: cached window list, background activation with timeouts.
-- Optional window previews (off by default, needs Screen Recording).
-- Freeze-frame screenshots (default `⌘⇧2`): drawing tools, text recognition (OCR), pin on top of other windows, color picker, copy or save to a folder.
-- The switcher and the screenshot tool are enabled and disabled independently from the menu-bar icon.
-
-**Two ways to run it**
-
-| | Accessibility only | Accessibility + Screen Recording |
-|---|---|---|
-| Window switcher (`⌥Tab` / `⌘Tab`) | yes, with app icons and window titles | yes |
-| Window previews in the switcher | no | yes (optional, macOS 14+) |
-| Screenshots: area, full screen, drawing, OCR, pin | no | yes (macOS 14+) |
-
-Screen Recording is optional: skip it in the setup window if you only want the switcher, and grant it later via **Permissions…**.
-
-**Install**
-1. Download `QuickTab.zip` from [Releases](https://github.com/lockermon4/alttab-windows-screenshoter-for-mac/releases/latest) and move `QuickTab.app` to `/Applications`.
-2. The app is not notarized, so Gatekeeper blocks the first launch. Either right-click `QuickTab.app` → **Open** → **Open**; or on macOS 15+ try to open it, then **System Settings → Privacy & Security → Open Anyway**; or run `xattr -dr com.apple.quarantine /Applications/QuickTab.app`.
-3. QuickTab uses two permissions: **Accessibility** (required: window switching, hotkeys) and **Screen Recording** (optional: screenshots, window previews — see the table above). On first launch the **Set up QuickTab** window walks you through them one by one: Accessibility, then Screen Recording, then **Restart QuickTab**. You can reopen it from the menu: **Permissions…**. If QuickTab isn't in a list in System Settings, click **+** below the list and pick `/Applications/QuickTab.app`. If AltTab or another switcher also uses ⌥Tab, quit it.
-
-Build from source: `./scripts/setup-signing.sh` (once) and `./scripts/build-app.sh --install` (needs Xcode or Command Line Tools).
-
-- **Два режима работы**, в зависимости от выданных разрешений:
-
-  | | Только «Универсальный доступ» | «Универсальный доступ» + «Запись экрана» |
+  | | Accessibility only | Accessibility + Screen Recording |
   |---|---|---|
-  | Переключатель окон (`⌥Tab` / `⌘Tab`) | да, с иконками приложений и заголовками окон | да |
-  | Превью окон в переключателе | нет | да (по желанию, macOS 14+) |
-  | Скриншоты: область, весь экран, рисование, OCR, закреп | нет | да (macOS 14+) |
+  | Window switcher (`⌥Tab` / `⌘Tab`) | yes, with app icons and window titles | yes |
+  | Window previews in the switcher | no | yes (optional, macOS 14+) |
+  | Screenshots: area, full screen, drawing, OCR, pin | no | yes (macOS 14+) |
 
-  «Универсальный доступ» нужен всегда. «Запись экрана» — по желанию: если нужен только переключатель, пропусти этот шаг в окне настройки, а выдать можно позже через «Разрешения…».
-- **Не зависает при частом нажатии.**
-  - Список окон всегда лежит готовым в кэше.
-  - Клавиатуру слушает отдельный поток.
-  - Все обращения к приложениям идут в фоне с таймаутом 0.25 с.
-  - Окна поднимаются через WindowServer.
-  - Каждое новое нажатие отменяет недоделанное предыдущее, поэтому подвисшее приложение не тормозит переключатель.
-- Быстрое `⌥Tab` сразу переключает на предыдущее окно, панель даже не рисуется.
-- **Превью окон — по желанию** (галочка в меню, по умолчанию выключена, macOS 14+). Для них нужна «Запись экрана». Снимки делаются в фоне и кэшируются, поэтому переключатель от них не тормозит.
-- **Встроенные скриншоты со стоп-кадром** (как Lightshot/Shottr, macOS 14+). Нажал горячую клавишу (по умолчанию `⌘⇧2`, меняется в меню), экран замирает в этот момент, выделяешь область, и она уже в буфере обмена. Нужна «Запись экрана». Отключается в меню.
+  Accessibility is always required. Screen Recording is optional: if you only want the switcher, skip that step in the setup window. You can grant it later via **Permissions…**.
+- **Doesn't hang when you press it rapidly.**
+  - The window list is always cached and ready.
+  - The keyboard is handled on its own thread.
+  - All calls to other apps run in the background with a 0.25 s timeout.
+  - Windows are raised through WindowServer.
+  - Each new press cancels the unfinished previous one, so a frozen app doesn't slow the switcher down.
+- A quick `⌥Tab` switches straight to the previous window without even drawing the panel.
+- **Window previews are optional** (menu checkbox, off by default, macOS 14+). They need Screen Recording. Thumbnails are captured in the background and cached, so they don't slow the switcher down.
+- **Built-in freeze-frame screenshots** (like Lightshot/Shottr, macOS 14+). Press the hotkey (default `⌘⇧2`, changeable in the menu), the screen freezes at that moment, select an area and it's already on the clipboard. Needs Screen Recording. Can be turned off in the menu.
 
-## Управление
+## Controls
 
-| Клавиши | Действие |
+| Keys | Action |
 |---|---|
-| `⌥Tab` (держать `⌥`) | открыть / следующее окно |
-| `⌥⇧Tab`, `←` `↑` | предыдущее окно |
-| `→` `↓` | следующее окно |
-| отпустить `⌥`, `Return`, клик мышью | переключиться |
-| `Esc` | отмена |
+| `⌥Tab` (hold `⌥`) | open / next window |
+| `⌥⇧Tab`, `←` `↑` | previous window |
+| `→` `↓` | next window |
+| release `⌥`, `Return`, mouse click | switch |
+| `Esc` | cancel |
 
-В меню (иконка в строке меню) можно:
-- включить / выключить переключатель окон (скриншоты при этом продолжают работать);
-- переключить сочетание на `⌘Tab` (системный ⌘Tab при этом отключается);
-  системный ⌘Tab возвращается, когда QuickTab завершается: через меню «Выйти», `pkill`, Ctrl+C в Терминале или при выходе из системы. Если QuickTab упал и системный ⌘Tab не работает, запусти QuickTab и выйди через меню или переключи в меню на «Сочетание ⌥Tab»; в крайнем случае поможет перезаход в систему;
-- включить превью окон (попросит «Запись экрана»; после выдачи разрешения перезапусти QuickTab);
-- включить автозапуск при входе.
+From the menu (menu-bar icon) you can:
+- turn the window switcher on or off (**Window switcher → Enabled**; screenshots keep working);
+- change the shortcut to `⌘Tab` (**Shortcut → ⌘Tab (replaces system one)**). The system ⌘Tab is disabled while QuickTab runs and comes back when QuickTab exits: via **Quit QuickTab**, `pkill`, Ctrl+C in Terminal, or logging out. If QuickTab crashed and the system ⌘Tab doesn't work, start QuickTab and quit it from the menu, or switch the shortcut back to **⌥Tab**; as a last resort, log out and back in;
+- turn on **Window previews** (asks for Screen Recording; restart QuickTab after granting it);
+- turn on **Launch at login**.
 
-## Скриншоты
+## Screenshots
 
-Нажми горячую клавишу (по умолчанию `⌘⇧2`): экран замрёт, выдели мышью область, и картинка окажется в буфере обмена. Требуется macOS 14+.
+Press the hotkey (default `⌘⇧2`): the screen freezes, select an area with the mouse, and the image lands on the clipboard. Requires macOS 14+.
 
-В меню:
-- «Скриншоты со стоп-кадром» — включить / выключить функцию;
-- «Сделать скриншот» — то же, что горячая клавиша;
-- «Горячая клавиша … — изменить…» — откроется окно, нажми новое сочетание (`Esc` — отмена);
-- «После выделения»: «Сразу копировать» (по умолчанию) / «Копировать и сохранить в папку» / «Открывать панель рисования»;
-- «Папка … — изменить…» — куда сохранять (по умолчанию `~/Pictures/QuickTab Screenshots`);
-- «Открыть папку со скриншотами».
+In the menu, under **Screenshots**:
+- **Enabled** — turn the feature on or off;
+- **Capture area** — same as the hotkey;
+- **Capture full screen** — capture the whole screen (default `⌘⇧1`);
+- **Hotkeys → Area: … — change…** / **Full screen: … — change…** — a window opens, press the new combination (`Esc` cancels);
+- **After capture**: **Copy immediately** (default) / **Copy and save to folder** / **Open drawing panel**;
+- **Folder → Change…** — where to save (default `~/Pictures/QuickTab Screenshots`);
+- **Folder → Open folder**.
 
-Совет: если держать `⌥`, отпуская мышь, откроется панель рисования даже в режиме «Сразу копировать».
+Tip: hold `⌥` while releasing the mouse to open the drawing panel even in **Copy immediately** mode.
 
-| Клавиши (на стоп-кадре) | Действие |
+| Keys (on the frozen frame) | Action |
 |---|---|
-| тянуть мышью | выделить область (за ручки — изменить размер, внутри — двигать) |
-| `↩`, `⌘C`, двойной клик | скопировать и закрыть |
-| `⌘S` | сохранить в папку (и скопировать) |
-| `P` | закрепить поверх окон (перетаскивается, колесо — масштаб, двойной клик / `Esc` — закрыть, правый клик — меню) |
-| `O` | распознать текст (OCR, русский + английский) и скопировать текст |
-| `C` | скопировать HEX цвета под курсором (лупа) |
-| `⌘Z` | отменить |
-| `⌘A` | выделить весь экран |
-| `V` `B` `L` `A` `R` `E` `M` `T` `X` | выделение, карандаш, линия, стрелка, прямоугольник, эллипс, маркер, текст, пикселизация |
-| `⇧` при рисовании | квадрат / круг, линии под 45° |
-| стрелки (`⇧` + стрелки) | сдвинуть курсор на 1 (10) px |
-| правый клик | сбросить выделение, ещё раз — закрыть |
-| `Esc` | закрыть |
+| drag | select an area (drag the handles to resize, drag inside to move) |
+| `↩`, `⌘C`, double-click | copy and close |
+| `⌘S` | save to folder (and copy) |
+| `P` | pin above other windows (draggable, scroll wheel zooms, double-click / `Esc` closes, right-click opens a menu) |
+| `O` | recognize text (OCR, Russian + English) and copy it |
+| `C` | copy the HEX color under the cursor (magnifier) |
+| `⌘Z` | undo |
+| `⌘A` | select the whole screen |
+| `V` `B` `L` `A` `R` `E` `M` `T` `X` | select, pencil, line, arrow, rectangle, ellipse, marker, text, pixelate |
+| `⇧` while drawing | square / circle, lines at 45° |
+| arrows (`⇧` + arrows) | move the cursor by 1 (10) px |
+| right-click | clear the selection, again to close |
+| `Esc` | close |
 
-При первом нажатии macOS попросит «Запись экрана». После выдачи разрешения перезапусти QuickTab (пункт меню «Перезапустить QuickTab»).
+On first use macOS asks for Screen Recording. After granting it, restart QuickTab (menu item **Restart QuickTab (after granting permission)**).
 
-### Если просит «Запись экрана», хотя она включена
-macOS привязывает разрешение к подписи приложения. Если поставить сборку с другой подписью (старые ad-hoc сборки из Actions, сборка без `./scripts/setup-signing.sh` или переход между своей сборкой и релизной), галочка в настройках остаётся, но уже не работает.
+### Asks for Screen Recording although it's on
+macOS ties the permission to the app's signature. If you install a build with a different signature (old ad-hoc builds from Actions, a build made without `./scripts/setup-signing.sh`, or switching between your own build and a release build), the checkbox in System Settings stays on but no longer works.
 
-- **Из приложения.** Когда скриншот не получается, QuickTab показывает окно с кнопкой «Сбросить и разрешить заново». Она удаляет старую запись, заново запрашивает разрешение и открывает Системные настройки. Включи там QuickTab, и он сам перезапустится. То же самое есть в меню: «Скриншоты → Сбросить разрешение «Запись экрана»…».
-- **Вручную.** Выполни команду ниже, затем снова включи QuickTab в настройках и перезапусти его:
+- **From the app.** When a screenshot fails, QuickTab shows a dialog with a **Reset and allow again** button. It removes the old entry, requests the permission again and opens System Settings. Turn QuickTab on there and it restarts by itself. The same action is in the menu: **Screenshots → Screen Recording → Reset Screen Recording permission…**.
+- **Manually.** Run the command below, then turn QuickTab on again in System Settings and restart it:
   ```bash
   tccutil reset ScreenCapture io.github.lockermon4.quicktab
   ```
-- **Чтобы больше не повторялось**, один раз выполни `./scripts/setup-signing.sh` и собирай через `./scripts/build-app.sh --install` (подробнее в разделе [Чтобы разрешения не слетали после пересборки](#чтобы-разрешения-не-слетали-после-пересборки)).
+- **To stop it from happening again**, run `./scripts/setup-signing.sh` once and build with `./scripts/build-app.sh --install` (see [Keeping permissions across rebuilds](#keeping-permissions-across-rebuilds)).
 
-## Установка
+## Install
 
-### Вариант 1: готовая сборка
-1. Скачай `QuickTab.zip` со страницы [**Releases**](https://github.com/lockermon4/alttab-windows-screenshoter-for-mac/releases/latest) и распакуй (двойной клик).
-2. Перетащи `QuickTab.app` в папку **Программы** (`/Applications`).
-3. **Первый запуск.** Приложение не нотаризовано Apple (нет платного Developer ID), поэтому macOS сначала его заблокирует («не удаётся проверить разработчика»). Обойти можно любым способом:
-   - правый клик по `QuickTab.app` → **Открыть** → **Открыть**;
-   - или, если такой кнопки нет (macOS 15+): попробуй открыть, затем **Системные настройки → Конфиденциальность и безопасность** → внизу «QuickTab заблокирован» → **Всё равно открыть**;
-   - или одной командой в Терминале:
+Requires macOS 13+ (window previews and screenshots need macOS 14+).
+
+### Option 1: release build
+1. Download `QuickTab.zip` from [**Releases**](https://github.com/lockermon4/alttab-windows-screenshoter-for-mac/releases/latest) and unzip it (double-click).
+2. Drag `QuickTab.app` into **Applications** (`/Applications`).
+3. **First launch.** The app isn't notarized by Apple (no paid Developer ID), so macOS blocks it at first ("cannot verify the developer"). Any of these gets around it:
+   - right-click `QuickTab.app` → **Open** → **Open**;
+   - or, if there's no such button (macOS 15+): try to open it, then go to **System Settings → Privacy & Security**, find "QuickTab was blocked" at the bottom and click **Open Anyway**;
+   - or run one command in Terminal:
      ```bash
      xattr -dr com.apple.quarantine /Applications/QuickTab.app
      ```
-4. **Разрешения.** **«Универсальный доступ»** нужен обязательно (переключение окон, горячие клавиши), **«Запись экрана»** — по желанию (скриншоты, превью окон; см. таблицу «Два режима работы» выше). При первом запуске откроется окно **«Настройка QuickTab»** и проведёт по ним по очереди: сначала «Универсальный доступ», потом «Запись экрана», затем **«Перезапустить QuickTab»**. Открыть его снова можно из меню: **«Разрешения…»**.
-   Если QuickTab нет в списке в Системных настройках, нажми **+** под списком и выбери `/Applications/QuickTab.app`. Если AltTab или другой переключатель тоже занимает ⌥Tab, закрой его.
+4. **Permissions.** **Accessibility** is required (window switching, hotkeys); **Screen Recording** is optional (screenshots, window previews; see the "Two ways to run it" table above). On first launch the **Set up QuickTab** window walks you through them one at a time: Accessibility first, then Screen Recording, then **Restart QuickTab**. You can reopen it from the menu: **Permissions…**.
+   If QuickTab isn't in a list in System Settings, click **+** below the list and choose `/Applications/QuickTab.app`. If AltTab or another switcher also uses ⌥Tab, quit it.
 
-**Обновление:** скачай новый `QuickTab.zip` и замени приложение в «Программах». Разрешения сохранятся: все релизные сборки подписаны одним сертификатом. Если macOS всё же снова просит разрешения, см. [Если просит «Запись экрана», хотя она включена](#если-просит-запись-экрана-хотя-она-включена).
+**Updating:** download the new `QuickTab.zip` and replace the app in Applications. Permissions are kept, because all release builds are signed with the same certificate. If macOS still asks for permissions again, see [Asks for Screen Recording although it's on](#asks-for-screen-recording-although-its-on).
 
-### Вариант 2: собрать самому
-Нужны Xcode или Command Line Tools (`xcode-select --install`).
+### Option 2: build from source
+You need Xcode or the Command Line Tools (`xcode-select --install`).
 ```bash
 git clone https://github.com/lockermon4/alttab-windows-screenshoter-for-mac.git QuickTab && cd QuickTab
-./scripts/setup-signing.sh      # один раз: личный сертификат, чтобы разрешения не слетали
+./scripts/setup-signing.sh      # once: a personal certificate so permissions survive rebuilds
 ./scripts/build-app.sh --install
 ```
 
-### Чтобы разрешения не слетали после пересборки
-По умолчанию приложение подписывается ad-hoc, и подпись меняется при каждой сборке. macOS привязывает разрешения к подписи. Поэтому старая запись в «Универсальном доступе» остаётся включённой, но уже не работает.
+### Keeping permissions across rebuilds
+By default the app is signed ad-hoc, and the signature changes with every build. macOS ties permissions to the signature, so the old Accessibility entry stays enabled but no longer works.
 
-Чтобы этого не было, **один раз** создай личный сертификат (macOS спросит пароль):
+To avoid this, create a personal certificate **once** (macOS will ask for your password):
 ```bash
 ./scripts/setup-signing.sh
 ```
-После этого собирай и ставь одной командой, разрешения сохранятся:
+After that, build and install with one command and permissions are kept:
 ```bash
 ./scripts/build-app.sh --install
 ```
 
-Если разрешения уже «сломались», сбрось их и выдай заново:
+If permissions are already broken, reset them and grant them again:
 ```bash
 tccutil reset Accessibility io.github.lockermon4.quicktab; tccutil reset ScreenCapture io.github.lockermon4.quicktab
 ```
 
-### Подпись сборок на GitHub (для владельца репозитория)
-GitHub Actions подписывает каждую сборку одним постоянным сертификатом «QuickTab Dev» из секретов репозитория, поэтому macOS не сбрасывает «Универсальный доступ» и «Запись экрана» при обновлении. Без секретов сборка подписывается ad-hoc.
+### Signing GitHub builds (for the repository owner)
+GitHub Actions signs every build with one permanent "QuickTab Dev" certificate from the repository secrets, so macOS doesn't reset Accessibility and Screen Recording on update. Without the secrets the build is signed ad-hoc.
 
-Чтобы настроить, **один раз** выполни на своём Mac:
+To set it up, run this **once** on your Mac:
 ```bash
 ./scripts/setup-ci-signing.sh
 ```
-Скрипт:
-- создаёт новый сертификат «QuickTab Dev» (заменяет старый локальный), ставит его и делает доверенным;
-- сохраняет его копию в `~/.quicktab-signing/`;
-- загружает секреты `QUICKTAB_P12_BASE64` и `QUICKTAB_P12_PASSWORD` в репозиторий через `gh`. Для этого нужен `gh auth login`. Без `gh` скрипт напечатает, что добавить вручную: **Settings → Secrets and variables → Actions → New repository secret**.
+The script:
+- creates a new "QuickTab Dev" certificate (replacing the old local one), installs it and marks it as trusted;
+- keeps a copy in `~/.quicktab-signing/`;
+- uploads the `QUICKTAB_P12_BASE64` and `QUICKTAB_P12_PASSWORD` secrets to the repository via `gh`. This needs `gh auth login`. Without `gh` the script prints what to add by hand: **Settings → Secrets and variables → Actions → New repository secret**.
 
-После этого локальные сборки и сборки с GitHub подписаны одинаково. Пересобери приложение и один раз выдай разрешения заново (сертификат сменился):
+After that, local builds and GitHub builds are signed the same way. Rebuild the app and grant the permissions once more (the certificate changed):
 ```bash
 ./scripts/build-app.sh --install
 ```
 
-Выпустить релиз: создай тег `v*`, Actions соберёт `QuickTab.zip` и выложит его в Releases.
+To publish a release, push a `v*` tag; Actions builds `QuickTab.zip` and uploads it to Releases.
 ```bash
 git tag v1.2.0 && git push origin v1.2.0
 ```
 
-## Устройство
+## How it works
 
-| Файл | Что делает |
+| File | What it does |
 |---|---|
-| `WindowTracker.swift` | Список окон в порядке использования. AXObserver'ы на отдельном потоке, начальный порядок по z-order из `CGWindowList` (без записи экрана). |
-| `HotkeyTap.swift` | CGEventTap на своём потоке. Ловит и горячую клавишу скриншота. |
-| `Activator.swift`, `SkyLight.swift` | Переключение на окно: фоновая очередь, «побеждает последнее нажатие». |
-| `SwitcherPanel.swift` | Панель (NSPanel, не забирает фокус). |
-| `Previews.swift` | Необязательные миниатюры через ScreenCaptureKit, фон + кэш. |
-| `Screenshot/ScreenshotController.swift` | Скриншоты: оркестрация, буфер обмена, сохранение, OCR через Vision. |
-| `Screenshot/ScreenGrabber.swift` | Снимок всех дисплеев через ScreenCaptureKit; список дисплеев закэширован, поэтому стоп-кадр мгновенный. |
-| `Screenshot/ScreenshotOverlay.swift` | Окно стоп-кадра: выделение, инструменты рисования, лупа, панель инструментов. |
-| `Screenshot/PinWindow.swift` | Закреплённый поверх окон скриншот. |
-| `Screenshot/HotkeyRecorder.swift` | Окно записи новой горячей клавиши. |
-| `Screenshot/ScreenshotSettings.swift` | Настройки скриншотов. |
+| `WindowTracker.swift` | Window list in most-recently-used order. AXObservers on a separate thread; initial order from the `CGWindowList` z-order (no Screen Recording needed). |
+| `HotkeyTap.swift` | CGEventTap on its own thread. Also catches the screenshot hotkey. |
+| `Activator.swift`, `SkyLight.swift` | Switching to a window: background queue, "last press wins". |
+| `SwitcherPanel.swift` | The panel (NSPanel that doesn't take focus). |
+| `Previews.swift` | Optional thumbnails via ScreenCaptureKit, in the background with a cache. |
+| `Screenshot/ScreenshotController.swift` | Screenshots: orchestration, clipboard, saving, OCR via Vision. |
+| `Screenshot/ScreenGrabber.swift` | Captures all displays via ScreenCaptureKit; the display list is cached, so the freeze frame is instant. |
+| `Screenshot/ScreenshotOverlay.swift` | Freeze-frame window: selection, drawing tools, magnifier, toolbar. |
+| `Screenshot/PinWindow.swift` | A screenshot pinned above other windows. |
+| `Screenshot/HotkeyRecorder.swift` | Window for recording a new hotkey. |
+| `Screenshot/ScreenshotSettings.swift` | Screenshot settings. |
 
-Требуется macOS 13+ (превью окон и скриншоты — macOS 14+).
+Requires macOS 13+ (window previews and screenshots need macOS 14+).
 
-## Выпуск релиза (для автора)
+## Releasing (for the author)
 
-Релиз собирает GitHub Actions по тегу и подписывает его постоянным сертификатом «QuickTab Dev» из секретов репозитория (настройка один раз: `./scripts/setup-ci-signing.sh`, см. выше). Тогда у пользователей не слетают разрешения после обновления.
+GitHub Actions builds the release from a tag and signs it with the permanent "QuickTab Dev" certificate from the repository secrets (one-time setup: `./scripts/setup-ci-signing.sh`, see above). That way users keep their permissions after updating.
 
-1. Подними `CFBundleShortVersionString` / `CFBundleVersion` в `Resources/Info.plist` и обнови `.github/release-notes.md`.
-2. `git tag v<версия> && git push origin v<версия>` — CI соберёт `QuickTab.zip` и опубликует релиз.
+1. Bump `CFBundleShortVersionString` / `CFBundleVersion` in `Resources/Info.plist` and update `.github/release-notes.md`.
+2. `git tag v<version> && git push origin v<version>` — CI builds `QuickTab.zip` and publishes the release.
 
-Локально то же самое собирает `./scripts/release.sh` (zip + dmg в `build/`).
+`./scripts/release.sh` builds the same thing locally (zip + dmg in `build/`).
 
-## Лицензия / License
+## License
 
-MIT — см. [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).
