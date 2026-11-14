@@ -22,7 +22,7 @@ enum SkyLight {
 
     static func makeFrontmost(pid: pid_t, windowID: CGWindowID) {
         var psn = ProcessSerialNumber()
-        if qt_GetProcessForPID(pid, &psn) == noErr {
+        if qt_GetProcessForPID(pid, &psn) == 0 {
             qt_SLPSSetFrontProcessWithOptions(&psn, windowID, userGenerated)
             makeKeyWindow(&psn, windowID)
         } else {
