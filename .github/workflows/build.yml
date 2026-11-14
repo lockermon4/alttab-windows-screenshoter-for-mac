@@ -13,8 +13,33 @@ permissions:
 jobs:
   build:
     runs-on: macos-latest
+    env:
+      HAS_SIGNING: ${{ secrets.QUICKTAB_P12_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
+
+      # Один постоянный сертификат «QuickTab Dev» (см. scripts/setup-ci-signing.sh):
+      # у всех, кто ставит сборки из Releases, разрешения переживают обновления.
+      - name: Import signing certificate
+        if: env.HAS_SIGNING == 'true'
+        env:
+          P12_BASE64: ${{ secrets.QUICKTAB_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.QUICKTAB_P12_PASSWORD }}
+        run: |
+          KC="$RUNNER_TEMP/signing.keychain-db"
+          KCPASS=$(uuidgen)
+          security create-keychain -p "$KCPASS" "$KC"
+          security set-keychain-settings -lut 21600 "$KC"
+          security unlock-keychain -p "$KCPASS" "$KC"
+          printf '%s' "$P12_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KC" -P "$P12_PASSWORD" -T /usr/bin/codesign
+          rm -f "$RUNNER_TEMP/cert.p12"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KCPASS" "$KC" >/dev/null
+          security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+          security find-certificate -c "QuickTab Dev" -p "$KC" > "$RUNNER_TEMP/cert.pem"
+          sudo security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain "$RUNNER_TEMP/cert.pem" \
+            || echo "::warning::could not mark certificate as trusted"
+          echo "SIGN_IDENTITY=QuickTab Dev" >> "$GITHUB_ENV"
       - name: Build QuickTab.app
         run: |
           set -o pipefail
@@ -22,6 +47,15 @@ jobs:
       - name: Report compile errors
         if: failure()
         run: grep -E "error:" build.log | sort -u | head -40 | sed -E 's/^/::error::/' || true
+      - name: Check signature
+        run: |
+          codesign -dv --verbose=2 build/QuickTab.app 2>&1 | grep -E "Identifier|Authority|Signature" || true
+          if [ "$HAS_SIGNING" = "true" ] && ! codesign -dv --verbose=2 build/QuickTab.app 2>&1 | grep -q "Authority=QuickTab Dev"; then
+            echo "::error::build is not signed with QuickTab Dev"; exit 1
+          fi
+          if [ "$HAS_SIGNING" != "true" ]; then
+            echo "::warning::No QUICKTAB_P12_BASE64 secret: ad-hoc signature, permissions will reset on every update. Run scripts/setup-ci-signing.sh"
+          fi
       - name: Zip
         run: cd build && ditto -c -k --keepParent QuickTab.app QuickTab.zip
       - uses: actions/upload-artifact@v4
@@ -32,4 +66,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
+          name: QuickTab ${{ github.ref_name }}
+          body_path: .github/release-notes.md
+          make_latest: true
           files: build/QuickTab.zip
