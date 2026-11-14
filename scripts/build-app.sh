@@ -57,6 +57,7 @@ fi
 echo "Готово: $APP (подпись: ${SIGN_IDENTITY:-ad-hoc})"
 
 if [ "$INSTALL" = 1 ]; then
+    # QuickTab ловит SIGTERM и перед выходом возвращает системный ⌘Tab.
     pkill -x QuickTab 2>/dev/null || true
     sleep 0.5
     rm -rf /Applications/QuickTab.app

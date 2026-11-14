@@ -14,7 +14,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         set { UserDefaults.standard.set(newValue, forKey: useCommandKey); applyModifier() }
     }
 
+    private var signalSources: [DispatchSourceSignal] = []
+
+    /// Если QuickTab убивают (pkill, Ctrl+C, выход из системы), applicationWillTerminate
+    /// не вызывается — и системный ⌘Tab остался бы выключенным. Ловим сигналы сами.
+    private func restoreCommandTabOnSignals() {
+        for sig in [SIGTERM, SIGINT, SIGHUP, SIGQUIT] {
+            signal(sig, SIG_IGN)
+            let src = DispatchSource.makeSignalSource(signal: sig, queue: .main)
+            src.setEventHandler {
+                SkyLight.setSystemCommandTab(enabled: true)
+                exit(0)
+            }
+            src.resume()
+            signalSources.append(src)
+        }
+        atexit { SkyLight.setSystemCommandTab(enabled: true) }
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
+        restoreCommandTabOnSignals()
         ScreenshotSettings.registerDefaults()
         setupStatusItem()
         applyModifier()
