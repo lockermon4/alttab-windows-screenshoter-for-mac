@@ -6,7 +6,29 @@
 
 Лёгкий переключатель окон для macOS в стиле Windows Alt+Tab: личная минималистичная версия.
 
-- **Не нужна запись экрана.** Нет миниатюр окон, только иконки и заголовки. Требуется одно разрешение: «Универсальный доступ».
+**Возможности:** переключатель окон по `⌥Tab` / `⌘Tab` · необязательные превью окон · скриншоты со стоп-кадром · рисование поверх скриншота · распознавание текста (OCR) · закрепление скриншота поверх окон · пипетка цвета.
+Переключатель и скриншотер включаются и выключаются **независимо** в меню (иконка в строке меню): можно пользоваться только одним из них.
+
+[**Скачать последнюю версию**](https://github.com/lockermon4/alttab-windows-screenshoter-for-mac/releases/latest) · [Как установить](#установка) · [English](#english)
+
+## English
+
+QuickTab is a lightweight macOS menu-bar app: a Windows-style window switcher plus a Lightshot-style screenshot tool. Requires macOS 13+ (window previews and screenshots need macOS 14+).
+
+**Features**
+- Window switcher on `⌥Tab` or `⌘Tab` (replaces the system ⌘Tab while QuickTab runs; restored on quit). Never hangs: cached window list, background activation with timeouts.
+- Optional window previews (off by default, needs Screen Recording).
+- Freeze-frame screenshots (default `⌘⇧2`): drawing tools, text recognition (OCR), pin on top of other windows, color picker, copy or save to a folder.
+- The switcher and the screenshot tool are enabled and disabled independently from the menu-bar icon.
+
+**Install**
+1. Download `QuickTab.zip` from [Releases](https://github.com/lockermon4/alttab-windows-screenshoter-for-mac/releases/latest) and move `QuickTab.app` to `/Applications`.
+2. The app is not notarized, so Gatekeeper blocks the first launch. Either right-click `QuickTab.app` → **Open** → **Open**; or on macOS 15+ try to open it, then **System Settings → Privacy & Security → Open Anyway**; or run `xattr -dr com.apple.quarantine /Applications/QuickTab.app`.
+3. Grant **Accessibility** (System Settings → Privacy & Security → Accessibility → QuickTab). For previews and screenshots also grant **Screen Recording**, then restart QuickTab from its menu. If QuickTab isn't in the Screen Recording list, click **+** below the list and pick `/Applications/QuickTab.app`. If AltTab or another switcher also uses ⌥Tab, quit it.
+
+Build from source: `./scripts/setup-signing.sh` (once) and `./scripts/build-app.sh --install` (needs Xcode or Command Line Tools).
+
+- **Для переключателя хватает «Универсального доступа».** По умолчанию в панели иконки и заголовки окон; «Запись экрана» нужна только для необязательных превью и скриншотов.
 - **Не зависает при частом нажатии.**
   - Список окон всегда лежит готовым в кэше.
   - Клавиатуру слушает отдельный поток.
@@ -28,6 +50,7 @@
 | `Esc` | отмена |
 
 В меню (иконка в строке меню) можно:
+- включить / выключить переключатель окон (скриншоты при этом продолжают работать);
 - переключить сочетание на `⌘Tab` (системный ⌘Tab при этом отключается);
   системный ⌘Tab возвращается, когда QuickTab завершается: через меню «Выйти», `pkill`, Ctrl+C в Терминале или при выходе из системы. Если QuickTab упал и системный ⌘Tab не работает, запусти QuickTab и выйди через меню или переключи в меню на «Сочетание ⌥Tab»; в крайнем случае поможет перезаход в систему;
 - включить превью окон (попросит «Запись экрана»; после выдачи разрешения перезапусти QuickTab);
@@ -71,27 +94,30 @@ macOS привязывает разрешение к подписи прилож
 - **Из приложения.** Когда скриншот не получается, QuickTab показывает окно с кнопкой «Сбросить и разрешить заново». Она удаляет старую запись, заново запрашивает разрешение и открывает Системные настройки. Включи там QuickTab, и он сам перезапустится. То же самое есть в меню: «Скриншоты → Сбросить разрешение «Запись экрана»…».
 - **Вручную.** Выполни команду ниже, затем снова включи QuickTab в настройках и перезапусти его:
   ```bash
-  tccutil reset ScreenCapture local.quicktab
+  tccutil reset ScreenCapture io.github.lockermon4.quicktab
   ```
 - **Чтобы больше не повторялось**, один раз выполни `./scripts/setup-signing.sh` и собирай через `./scripts/build-app.sh --install` (подробнее в разделе [Чтобы разрешения не слетали после пересборки](#чтобы-разрешения-не-слетали-после-пересборки)).
 
 ## Установка
 
-### Вариант 1: скачать готовую сборку (рекомендуется)
-1. Скачай `QuickTab.zip` со страницы [Releases](https://github.com/lockermon4/alttab-windows-screenshoter-for-mac/releases/latest).
-2. Распакуй и перетащи `QuickTab.app` в «Программы».
-3. Приложение не нотаризовано Apple, поэтому при первом запуске macOS его заблокирует. Проще всего снять карантин командой:
-   ```bash
-   xattr -dr com.apple.quarantine /Applications/QuickTab.app
-   ```
-   Или открой QuickTab, затем **Системные настройки → Конфиденциальность и безопасность → «Всё равно открыть»**. На macOS 15 правый клик → «Открыть» больше не помогает.
-4. При запуске QuickTab попросит «Универсальный доступ»:
+### Вариант 1: готовая сборка
+1. Скачай `QuickTab.zip` со страницы [**Releases**](https://github.com/lockermon4/alttab-windows-screenshoter-for-mac/releases/latest) и распакуй (двойной клик).
+2. Перетащи `QuickTab.app` в папку **Программы** (`/Applications`).
+3. **Первый запуск.** Приложение не нотаризовано Apple (нет платного Developer ID), поэтому macOS сначала его заблокирует («не удаётся проверить разработчика»). Обойти можно любым способом:
+   - правый клик по `QuickTab.app` → **Открыть** → **Открыть**;
+   - или, если такой кнопки нет (macOS 15+): попробуй открыть, затем **Системные настройки → Конфиденциальность и безопасность** → внизу «QuickTab заблокирован» → **Всё равно открыть**;
+   - или одной командой в Терминале:
+     ```bash
+     xattr -dr com.apple.quarantine /Applications/QuickTab.app
+     ```
+4. **Разрешения.** macOS попросит «Универсальный доступ», он нужен для переключателя окон:
    **Системные настройки → Конфиденциальность и безопасность → Универсальный доступ → QuickTab ✓**.
-5. При первом скриншоте (`⌘⇧2`) macOS попросит «Запись экрана». После выдачи разрешения перезапусти QuickTab.
+   Для превью окон и скриншотов дополнительно нужна **«Запись экрана»** (там же). После выдачи разрешения перезапусти QuickTab (пункт меню «Перезапустить QuickTab»).
+   Если QuickTab нет в списке «Записи экрана», нажми **+** под списком и выбери `/Applications/QuickTab.app`. Если AltTab или другой переключатель тоже занимает ⌥Tab, закрой его.
 
-**Обновление:** скачай новый `QuickTab.zip` и замени приложение в «Программах». Разрешения сохранятся: все релизные сборки подписаны одним и тем же сертификатом.
+**Обновление:** скачай новый `QuickTab.zip` и замени приложение в «Программах». Разрешения сохранятся: все релизные сборки подписаны одним сертификатом. Если macOS всё же снова просит разрешения, см. [Если просит «Запись экрана», хотя она включена](#если-просит-запись-экрана-хотя-она-включена).
 
-### Вариант 2: собрать самому (для разработчиков)
+### Вариант 2: собрать самому
 Нужны Xcode или Command Line Tools (`xcode-select --install`).
 ```bash
 git clone https://github.com/lockermon4/alttab-windows-screenshoter-for-mac.git QuickTab && cd QuickTab
@@ -113,7 +139,7 @@ git clone https://github.com/lockermon4/alttab-windows-screenshoter-for-mac.git 
 
 Если разрешения уже «сломались», сбрось их и выдай заново:
 ```bash
-tccutil reset Accessibility local.quicktab; tccutil reset ScreenCapture local.quicktab
+tccutil reset Accessibility io.github.lockermon4.quicktab; tccutil reset ScreenCapture io.github.lockermon4.quicktab
 ```
 
 ### Подпись сборок на GitHub (для владельца репозитория)
@@ -155,3 +181,16 @@ git tag v1.2.0 && git push origin v1.2.0
 | `Screenshot/ScreenshotSettings.swift` | Настройки скриншотов. |
 
 Требуется macOS 13+ (превью окон и скриншоты — macOS 14+).
+
+## Выпуск релиза (для автора)
+
+Релиз собирает GitHub Actions по тегу и подписывает его постоянным сертификатом «QuickTab Dev» из секретов репозитория (настройка один раз: `./scripts/setup-ci-signing.sh`, см. выше). Тогда у пользователей не слетают разрешения после обновления.
+
+1. Подними `CFBundleShortVersionString` / `CFBundleVersion` в `Resources/Info.plist` и обнови `.github/release-notes.md`.
+2. `git tag v<версия> && git push origin v<версия>` — CI соберёт `QuickTab.zip` и опубликует релиз.
+
+Локально то же самое собирает `./scripts/release.sh` (zip + dmg в `build/`).
+
+## Лицензия / License
+
+MIT — см. [LICENSE](LICENSE).

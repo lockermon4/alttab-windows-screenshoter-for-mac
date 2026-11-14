@@ -331,7 +331,7 @@ final class ScreenshotOverlayView: NSView, NSTextFieldDelegate {
 
         let para = NSMutableParagraphStyle()
         para.alignment = .center
-        let str = NSAttributedString(string: "\(px), \(py)\n\(hexColor(x: px, y: py))   C — копировать",
+        let str = NSAttributedString(string: "\(px), \(py)\n\(hexColor(x: px, y: py))   " + NSLocalizedString("C — copy", comment: ""),
                                      attributes: [.font: NSFont.monospacedDigitSystemFont(ofSize: 10.5, weight: .regular),
                                                   .foregroundColor: NSColor.white, .paragraphStyle: para])
         str.draw(in: info.insetBy(dx: 2, dy: 4))
@@ -519,6 +519,13 @@ final class ScreenshotOverlayView: NSView, NSTextFieldDelegate {
         needsDisplay = true
     }
 
+    /// Выделить весь экран сразу (снимок всего экрана в режиме редактора).
+    func selectAll() {
+        sel = bounds
+        layoutToolbar()
+        needsDisplay = true
+    }
+
     // MARK: - Панель инструментов
 
     private func layoutToolbar() {
@@ -572,7 +579,7 @@ final class ScreenshotOverlayView: NSView, NSTextFieldDelegate {
         f.drawsBackground = true
         f.isBordered = false
         f.focusRingType = .none
-        f.placeholderString = "Текст…"
+        f.placeholderString = NSLocalizedString("Text…", comment: "")
         f.target = self
         f.action = #selector(textEntered)
         f.delegate = self
@@ -729,15 +736,15 @@ final class ScreenshotToolbar: NSView {
         stack.edgeInsets = NSEdgeInsets(top: 4, left: 4, bottom: 4, right: 4)
 
         let tools: [(ScreenshotOverlayView.Tool?, String, String)] = [
-            (nil, "cursorarrow", "Выделение (V)"),
-            (.pen, "pencil", "Карандаш (B)"),
-            (.line, "line.diagonal", "Линия (L)"),
-            (.arrow, "arrow.up.right", "Стрелка (A)"),
-            (.rect, "rectangle", "Прямоугольник (R)"),
-            (.ellipse, "circle", "Эллипс (E)"),
-            (.marker, "highlighter", "Маркер (M)"),
-            (.text, "textformat", "Текст (T)"),
-            (.pixelate, "checkerboard.rectangle", "Скрыть пикселями (X)"),
+            (nil, "cursorarrow", NSLocalizedString("Select (V)", comment: "")),
+            (.pen, "pencil", NSLocalizedString("Pen (B)", comment: "")),
+            (.line, "line.diagonal", NSLocalizedString("Line (L)", comment: "")),
+            (.arrow, "arrow.up.right", NSLocalizedString("Arrow (A)", comment: "")),
+            (.rect, "rectangle", NSLocalizedString("Rectangle (R)", comment: "")),
+            (.ellipse, "circle", NSLocalizedString("Ellipse (E)", comment: "")),
+            (.marker, "highlighter", NSLocalizedString("Marker (M)", comment: "")),
+            (.text, "textformat", NSLocalizedString("Text (T)", comment: "")),
+            (.pixelate, "checkerboard.rectangle", NSLocalizedString("Pixelate (X)", comment: "")),
         ]
         for (i, (t, sym, tip)) in tools.enumerated() {
             let b = makeButton(sym, tip, #selector(toolClicked(_:)))
@@ -746,18 +753,18 @@ final class ScreenshotToolbar: NSView {
             stack.addArrangedSubview(b)
         }
         stack.addArrangedSubview(separator())
-        colorButton = makeButton("circle.fill", "Цвет (клик — следующий)", #selector(colorClicked))
+        colorButton = makeButton("circle.fill", NSLocalizedString("Color (click — next)", comment: ""), #selector(colorClicked))
         stack.addArrangedSubview(colorButton)
-        widthButton = makeButton("lineweight", "Толщина (клик — следующая)", #selector(widthClicked))
+        widthButton = makeButton("lineweight", NSLocalizedString("Width (click — next)", comment: ""), #selector(widthClicked))
         stack.addArrangedSubview(widthButton)
         stack.addArrangedSubview(separator())
         let actions: [(String, String, Selector)] = [
-            ("arrow.uturn.backward", "Отменить (⌘Z)", #selector(undoClicked)),
-            ("text.viewfinder", "Распознать текст и скопировать (O)", #selector(ocrClicked)),
-            ("pin", "Закрепить поверх окон (P)", #selector(pinClicked)),
-            ("square.and.arrow.down", "Сохранить в папку (⌘S)", #selector(saveClicked)),
-            ("doc.on.doc", "Копировать (↩ / ⌘C)", #selector(copyClicked)),
-            ("xmark", "Закрыть (Esc)", #selector(closeClicked)),
+            ("arrow.uturn.backward", NSLocalizedString("Undo (⌘Z)", comment: ""), #selector(undoClicked)),
+            ("text.viewfinder", NSLocalizedString("Recognize text and copy (O)", comment: ""), #selector(ocrClicked)),
+            ("pin", NSLocalizedString("Pin on top of windows (P)", comment: ""), #selector(pinClicked)),
+            ("square.and.arrow.down", NSLocalizedString("Save to folder (⌘S)", comment: ""), #selector(saveClicked)),
+            ("doc.on.doc", NSLocalizedString("Copy (↩ / ⌘C)", comment: ""), #selector(copyClicked)),
+            ("xmark", NSLocalizedString("Close (Esc)", comment: ""), #selector(closeClicked)),
         ]
         for (sym, tip, sel) in actions {
             stack.addArrangedSubview(makeButton(sym, tip, sel))

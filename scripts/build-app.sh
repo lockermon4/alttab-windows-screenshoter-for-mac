@@ -28,6 +28,7 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/QuickTab" "$APP/Contents/MacOS/QuickTab"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
+cp -R Resources/*.lproj "$APP/Contents/Resources/"
 
 # Иконка: Resources/AppIcon-1024.png → AppIcon.icns (sips + iconutil есть в любой macOS)
 if [ -f Resources/AppIcon-1024.png ]; then
@@ -44,13 +45,13 @@ fi
 if [ -z "${SIGN_IDENTITY:-}" ] && security find-certificate -c "QuickTab Dev" >/dev/null 2>&1; then
     SIGN_IDENTITY="QuickTab Dev"
 fi
-codesign --force --sign "${SIGN_IDENTITY:--}" --identifier local.quicktab "$APP"
+codesign --force --sign "${SIGN_IDENTITY:--}" --identifier io.github.lockermon4.quicktab "$APP"
 
 if [ -z "${SIGN_IDENTITY:-}" ] && [ -z "${CI:-}" ]; then
     # Ad-hoc подпись меняется при каждой сборке: старая запись в «Универсальном доступе»
     # остаётся включённой, но уже не работает. Сбрасываем её, чтобы macOS спросила заново.
-    tccutil reset Accessibility local.quicktab >/dev/null 2>&1 || true
-    tccutil reset ScreenCapture local.quicktab >/dev/null 2>&1 || true
+    tccutil reset Accessibility io.github.lockermon4.quicktab >/dev/null 2>&1 || true
+    tccutil reset ScreenCapture io.github.lockermon4.quicktab >/dev/null 2>&1 || true
     echo "⚠️  Подпись ad-hoc — разрешения придётся выдать заново."
     echo "   Чтобы больше так не было, один раз запусти: ./scripts/setup-signing.sh"
 fi

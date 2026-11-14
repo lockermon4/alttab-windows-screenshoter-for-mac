@@ -4,3 +4,14 @@ build/
 *.xcodeproj
 xcuserdata/
 .DS_Store
+
+# Local-only
+CLAUDE.md
+.claude/
+*.zip
+*.dmg
+*.app
+*.p12
+*.pem
+*.key
+.env

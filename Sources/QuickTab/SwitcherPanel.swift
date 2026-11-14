@@ -40,8 +40,8 @@ final class SwitcherPanel: NSPanel {
     override var canBecomeMain: Bool { false }
 
     func present(_ windows: [WindowInfo], selected: Int, previews: Bool) {
-        let screen = NSScreen.screens.first { NSMouseInRect(NSEvent.mouseLocation, $0.frame, false) }
-            ?? NSScreen.main ?? NSScreen.screens[0]
+        guard let screen = NSScreen.screens.first(where: { NSMouseInRect(NSEvent.mouseLocation, $0.frame, false) })
+            ?? NSScreen.main ?? NSScreen.screens.first else { return } // нет экранов — не показываем
         let area = screen.visibleFrame
         let m = previews ? Metrics.previews : Metrics.icons
         let maxCols = max(1, Int((area.width * 0.92 - 2 * m.padding + m.spacing) / (m.item.width + m.spacing)))

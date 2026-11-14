@@ -37,7 +37,7 @@ final class PinWindow: NSPanel {
 
     @objc func copyImage() {
         ScreenshotController.shared.copyImage(cgImage, scale: scale)
-        Toast.show("Скопировано")
+        Toast.show(NSLocalizedString("Copied", comment: ""))
     }
 
     @objc func closePin() { close() }
@@ -71,10 +71,10 @@ private final class PinView: NSView {
     override func rightMouseDown(with event: NSEvent) {
         guard let w = window as? PinWindow else { return }
         let menu = NSMenu()
-        let copy = NSMenuItem(title: "Копировать", action: #selector(PinWindow.copyImage), keyEquivalent: "")
+        let copy = NSMenuItem(title: NSLocalizedString("Copy", comment: ""), action: #selector(PinWindow.copyImage), keyEquivalent: "")
         copy.target = w
         menu.addItem(copy)
-        let close = NSMenuItem(title: "Закрыть", action: #selector(PinWindow.closePin), keyEquivalent: "")
+        let close = NSMenuItem(title: NSLocalizedString("Close", comment: ""), action: #selector(PinWindow.closePin), keyEquivalent: "")
         close.target = w
         menu.addItem(close)
         NSMenu.popUpContextMenu(menu, with: event, for: self)

@@ -28,32 +28,49 @@ final class ScreenshotController {
 
     // MARK: - Съёмка
 
-    func capture() {
-        guard ScreenshotSettings.enabled, overlays.isEmpty, !capturing else { return }
+    func capture() { start(full: false) }
+
+    /// Весь монитор под курсором, без выделения; дальше — как в настройке «после выделения».
+    func captureFullScreen() { start(full: true) }
+
+    private func start(full: Bool) {
+        guard ScreenshotSettings.enabled, isSupported, overlays.isEmpty, !capturing else { return }
         guard #available(macOS 14.0, *) else { return }
         // Не верим CGPreflightScreenCaptureAccess: он бывает «нет», когда снимать можно.
         // Просто пробуем снять, а помощь показываем, только если не вышло.
         capturing = true
         previousApp = NSWorkspace.shared.frontmostApplication
+        let mouse = NSEvent.mouseLocation
+        let screens = full ? [NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) } ?? NSScreen.main].compactMap { $0 }
+                           : NSScreen.screens
         var scales: [CGDirectDisplayID: CGFloat] = [:]
-        for s in NSScreen.screens { scales[s.displayID] = s.backingScaleFactor }
+        for s in screens { scales[s.displayID] = s.backingScaleFactor }
 
         Task.detached(priority: .userInitiated) {
             let shots = await ScreenGrabber.shared.captureAll(scales: scales)
-            await MainActor.run { self.present(shots) }
+            await MainActor.run { self.present(shots, full: full) }
         }
     }
 
-    private func present(_ shots: [CGDirectDisplayID: CGImage]) {
+    private func present(_ shots: [CGDirectDisplayID: CGImage], full: Bool) {
         capturing = false
         guard !shots.isEmpty else {
             previousApp = nil
             showPermissionHelp()
             return
         }
+        if full, ScreenshotSettings.after != .editor,
+           let screen = NSScreen.screens.first(where: { shots[$0.displayID] != nil }), let img = shots[screen.displayID] {
+            let save = ScreenshotSettings.after == .save
+            finish(img, scale: CGFloat(img.width) / max(1, screen.frame.width), how: save ? .save : .copy, screenRect: screen.frame)
+            if !save { Toast.show(NSLocalizedString("Screenshot copied", comment: "")) }
+            return
+        }
         for screen in NSScreen.screens {
             guard let img = shots[screen.displayID] else { continue }
-            overlays.append(ScreenshotOverlayWindow(screen: screen, image: img, controller: self))
+            let w = ScreenshotOverlayWindow(screen: screen, image: img, controller: self)
+            if full { w.overlayView.selectAll() }
+            overlays.append(w)
         }
         NSApp.activate(ignoringOtherApps: true)
         let mouse = NSEvent.mouseLocation
@@ -70,17 +87,11 @@ final class ScreenshotController {
     private func showPermissionHelp() {
         NSApp.activate(ignoringOtherApps: true)
         let alert = NSAlert()
-        alert.messageText = "QuickTab не может снять экран"
-        alert.informativeText = """
-        Нужно разрешение «Запись экрана».
-
-        Если QuickTab уже включён в списке, но не работает, значит запись осталась от старой сборки \
-        (у неё была другая подпись). Нажми «Сбросить и разрешить заново», затем включи QuickTab \
-        в открывшихся Настройках. QuickTab перезапустится сам.
-        """
-        alert.addButton(withTitle: "Сбросить и разрешить заново")
-        alert.addButton(withTitle: "Открыть Настройки")
-        alert.addButton(withTitle: "Отмена")
+        alert.messageText = NSLocalizedString("QuickTab can't capture the screen", comment: "")
+        alert.informativeText = NSLocalizedString("Screen Recording permission is required.\n\nIf QuickTab is already enabled in the list but doesn't work, the entry is left over from an old build (it had a different signature). Click “Reset and allow again”, then enable QuickTab in the Settings that open. QuickTab will restart by itself.", comment: "")
+        alert.addButton(withTitle: NSLocalizedString("Reset and allow again", comment: ""))
+        alert.addButton(withTitle: NSLocalizedString("Open Settings", comment: ""))
+        alert.addButton(withTitle: NSLocalizedString("Cancel", comment: ""))
         switch alert.runModal() {
         case .alertFirstButtonReturn: resetPermission()
         case .alertSecondButtonReturn:
@@ -93,12 +104,25 @@ final class ScreenshotController {
 
     /// Удалить устаревшую запись в «Записи экрана», попросить заново и ждать, пока включат.
     func resetPermission() {
-        let id = Bundle.main.bundleIdentifier ?? "local.quicktab"
+        let id = Bundle.main.bundleIdentifier ?? "io.github.lockermon4.quicktab"
+        // tccutil ищет приложение по id через LaunchServices; без регистрации — ошибка -10814.
+        let reg = Process()
+        reg.executableURL = URL(fileURLWithPath: "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister")
+        reg.arguments = ["-f", Bundle.main.bundlePath]
+        do { try reg.run(); reg.waitUntilExit() } catch { NSLog("QuickTab: lsregister: \(error)") }
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/usr/bin/tccutil")
         task.arguments = ["reset", "ScreenCapture", id]
-        try? task.run()
-        task.waitUntilExit()
+        let err = Pipe()
+        task.standardError = err
+        var ok = false
+        do { try task.run(); task.waitUntilExit(); ok = task.terminationStatus == 0 } catch { NSLog("QuickTab: tccutil: \(error)") }
+        if !ok {
+            // Раньше ошибка глоталась молча — и кнопка «не работала» без объяснений.
+            let msg = String(data: err.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+            NSLog("QuickTab: tccutil reset failed: \(msg)")
+            Toast.show(NSLocalizedString("Couldn't reset the permission — remove QuickTab in System Settings manually", comment: ""))
+        }
         Previews.shared.requestPermission()
         if #available(macOS 14.0, *) {
             Task { await ScreenGrabber.shared.invalidate() }
@@ -122,7 +146,7 @@ final class ScreenshotController {
             if CGPreflightScreenCaptureAccess() {
                 t.invalidate()
                 self?.permissionTimer = nil
-                Toast.show("Разрешение получено, перезапускаю QuickTab…")
+                Toast.show(NSLocalizedString("Permission granted, restarting QuickTab…", comment: ""))
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) { Self.relaunch() }
             } else if ticks > 300 {
                 t.invalidate()
@@ -174,9 +198,9 @@ final class ScreenshotController {
         case .save:
             copyImage(img, scale: scale)
             if let url = save(img, scale: scale) {
-                Toast.show("Сохранено: \(url.lastPathComponent)")
+                Toast.show(String(format: NSLocalizedString("Saved: %@", comment: ""), url.lastPathComponent))
             } else {
-                Toast.show("Не удалось сохранить в \(ScreenshotSettings.saveDir.path)")
+                Toast.show(String(format: NSLocalizedString("Couldn't save to %@", comment: ""), ScreenshotSettings.saveDir.path))
             }
         case .pin:
             showPin(img, scale: scale, frame: screenRect)
@@ -190,7 +214,7 @@ final class ScreenshotController {
         let pb = NSPasteboard.general
         pb.clearContents()
         pb.setString(hex, forType: .string)
-        Toast.show("Цвет \(hex) скопирован")
+        Toast.show(String(format: NSLocalizedString("Color %@ copied", comment: ""), hex))
     }
 
     static func pngData(_ img: CGImage, scale: CGFloat) -> Data? {
@@ -215,8 +239,8 @@ final class ScreenshotController {
         do {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             let f = DateFormatter()
-            f.dateFormat = "yyyy-MM-dd 'в' HH.mm.ss"
-            let url = dir.appendingPathComponent("Скриншот \(f.string(from: Date())).png")
+            f.dateFormat = NSLocalizedString("yyyy-MM-dd 'at' HH.mm.ss", comment: "")
+            let url = dir.appendingPathComponent(String(format: NSLocalizedString("Screenshot %@.png", comment: ""), f.string(from: Date())))
             guard let data = Self.pngData(img, scale: scale) else { return nil }
             try data.write(to: url)
             return url
@@ -235,12 +259,12 @@ final class ScreenshotController {
             DispatchQueue.main.async {
                 let text = lines.joined(separator: "\n")
                 if text.isEmpty {
-                    Toast.show("Текст не найден")
+                    Toast.show(NSLocalizedString("No text found", comment: ""))
                 } else {
                     let pb = NSPasteboard.general
                     pb.clearContents()
                     pb.setString(text, forType: .string)
-                    Toast.show("Текст скопирован (\(lines.count) стр.)")
+                    Toast.show(String(format: NSLocalizedString("Text copied (%ld lines)", comment: ""), lines.count))
                 }
             }
         }
@@ -251,7 +275,7 @@ final class ScreenshotController {
             do {
                 try VNImageRequestHandler(cgImage: img).perform([request])
             } catch {
-                DispatchQueue.main.async { Toast.show("Не удалось распознать текст") }
+                DispatchQueue.main.async { Toast.show(NSLocalizedString("Couldn't recognize text", comment: "")) }
             }
         }
     }

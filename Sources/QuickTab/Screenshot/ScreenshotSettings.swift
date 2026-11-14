@@ -15,6 +15,9 @@ enum ScreenshotSettings {
             "shotKeyCode": 19, // «2»
             "shotMods": Int(NSEvent.ModifierFlags([.command, .shift]).rawValue),
             "shotKeyName": "2",
+            "shotFullKeyCode": 18, // «1»
+            "shotFullMods": Int(NSEvent.ModifierFlags([.command, .shift]).rawValue),
+            "shotFullKeyName": "1",
             "shotAfter": AfterSelect.copy.rawValue,
         ])
     }
@@ -39,6 +42,21 @@ enum ScreenshotSettings {
         set { d.set(newValue, forKey: "shotKeyName") }
     }
 
+    static var fullKeyCode: Int {
+        get { d.integer(forKey: "shotFullKeyCode") }
+        set { d.set(newValue, forKey: "shotFullKeyCode") }
+    }
+
+    static var fullMods: NSEvent.ModifierFlags {
+        get { NSEvent.ModifierFlags(rawValue: UInt(d.integer(forKey: "shotFullMods"))).intersection(modMask) }
+        set { d.set(Int(newValue.intersection(modMask).rawValue), forKey: "shotFullMods") }
+    }
+
+    static var fullKeyName: String {
+        get { d.string(forKey: "shotFullKeyName") ?? "?" }
+        set { d.set(newValue, forKey: "shotFullKeyName") }
+    }
+
     static var after: AfterSelect {
         get { AfterSelect(rawValue: d.string(forKey: "shotAfter") ?? "") ?? .copy }
         set { d.set(newValue.rawValue, forKey: "shotAfter") }
@@ -54,6 +72,7 @@ enum ScreenshotSettings {
     }
 
     static var hotkeyDescription: String { symbols(mods) + keyName }
+    static var fullHotkeyDescription: String { symbols(fullMods) + fullKeyName }
 
     static func symbols(_ m: NSEvent.ModifierFlags) -> String {
         var s = ""

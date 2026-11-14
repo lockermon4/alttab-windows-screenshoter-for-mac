@@ -11,6 +11,8 @@ final class HotkeyTap {
     var onAction: ((Action) -> Void)?
     /// Горячая клавиша скриншота (вызывается на главном потоке).
     var onScreenshot: (() -> Void)?
+    /// Горячая клавиша скриншота всего экрана (вызывается на главном потоке).
+    var onFullScreenshot: (() -> Void)?
 
     struct Combo: Equatable {
         let keyCode: Int64
@@ -23,6 +25,13 @@ final class HotkeyTap {
         set { lock.lock(); _screenshot = newValue; lock.unlock() }
     }
     private var _screenshot: Combo?
+
+    /// Сочетание для скриншота всего экрана; nil — выключено.
+    var fullScreenshotHotkey: Combo? {
+        get { lock.lock(); defer { lock.unlock() }; return _fullScreenshot }
+        set { lock.lock(); _fullScreenshot = newValue; lock.unlock() }
+    }
+    private var _fullScreenshot: Combo?
     private static let modMask: CGEventFlags = [.maskCommand, .maskShift, .maskAlternate, .maskControl]
 
     /// Модификатор переключателя. Пишется с главного потока, читается в колбэке.
@@ -32,6 +41,13 @@ final class HotkeyTap {
     }
 
     private var _modifier: CGEventFlags = .maskAlternate
+
+    /// Переключатель включён; выключен — ⌥Tab/⌘Tab идут в систему как есть.
+    var switcherEnabled: Bool {
+        get { lock.lock(); defer { lock.unlock() }; return _switcherEnabled }
+        set { lock.lock(); _switcherEnabled = newValue; lock.unlock() }
+    }
+    private var _switcherEnabled = true
     private let lock = NSLock()
     private var tap: CFMachPort?
     private var active = false // только на потоке тапа
@@ -64,14 +80,23 @@ final class HotkeyTap {
         return true
     }
 
+    /// Тап реально работает (не умер после отзыва Accessibility).
+    var isRunning: Bool { tap.map { CGEvent.tapIsEnabled(tap: $0) } ?? false }
+
     fileprivate func handle(_ type: CGEventType, _ event: CGEvent) -> Unmanaged<CGEvent>? {
         let pass = Unmanaged.passUnretained(event)
 
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if let tap { CGEvent.tapEnable(tap: tap, enable: true) }
+            // Тап не ожил или Accessibility отозван — вернуть системный ⌘Tab, иначе он пропадёт совсем.
+            if tap.map({ !CGEvent.tapIsEnabled(tap: $0) }) ?? true || !AXIsProcessTrusted() {
+                DispatchQueue.main.async { SkyLight.setSystemCommandTab(enabled: true) }
+            }
             return pass
         }
 
+        let on = switcherEnabled
+        if !on { active = false }
         let mod = modifier
         let flags = event.flags
         let other: CGEventFlags = mod == .maskCommand ? [.maskControl, .maskAlternate] : [.maskControl, .maskCommand]
@@ -93,7 +118,14 @@ final class HotkeyTap {
                 }
                 return nil
             }
-            if key == Key.tab && flags.contains(mod) && flags.intersection(other).isEmpty {
+            if !active, let hk = fullScreenshotHotkey, key == hk.keyCode,
+               flags.intersection(HotkeyTap.modMask) == hk.flags {
+                if event.getIntegerValueField(.keyboardEventAutorepeat) == 0 {
+                    DispatchQueue.main.async { [weak self] in self?.onFullScreenshot?() }
+                }
+                return nil
+            }
+            if on && key == Key.tab && flags.contains(mod) && flags.intersection(other).isEmpty {
                 let reverse = flags.contains(.maskShift)
                 if active {
                     send(reverse ? .previous : .next)
@@ -116,7 +148,9 @@ final class HotkeyTap {
             let key = event.getIntegerValueField(.keyboardEventKeycode)
             if let hk = screenshotHotkey, key == hk.keyCode,
                flags.intersection(HotkeyTap.modMask) == hk.flags { return nil }
-            if key == Key.tab && flags.contains(mod) { return nil }
+            if let hk = fullScreenshotHotkey, key == hk.keyCode,
+               flags.intersection(HotkeyTap.modMask) == hk.flags { return nil }
+            if on && key == Key.tab && flags.contains(mod) { return nil }
             if active && [Key.escape, Key.ret, Key.left, Key.right, Key.up, Key.down].contains(key) { return nil }
             return pass
 

@@ -1,24 +1,25 @@
-**QuickTab** — Alt+Tab как в Windows + скриншотер со стоп-кадром как Lightshot для macOS.
+**QuickTab** — a free, open-source window switcher (⌥Tab / ⌘Tab) and frozen-screen screenshot tool for macOS in one menu-bar app.
+Бесплатный переключатель окон и скриншотер со стоп-кадром для macOS в одном приложении.
 
-## Что нового в 1.1.0
-- Скриншоты со стоп-кадром: `⌘⇧2` (сочетание меняется в меню), экран замирает, выделяешь область — и она в буфере обмена.
-- Панель рисования: стрелки, рамки, текст, маркер, пикселизация.
-- Распознавание текста (`O`): OCR, русский + английский.
-- Закреп скриншота поверх окон (`P`).
-- Цвет под курсором (`C`): копирует HEX.
-- Иконка приложения.
-- Кнопка «Сбросить и разрешить заново» для «Записи экрана».
-- Системный ⌘Tab возвращается, даже если QuickTab убит.
+## Features / Возможности
+- Window switcher on ⌥Tab, or instead of the system ⌘Tab. Needs only Accessibility; window previews are optional.
+- The switcher and the screenshotter can each be turned on or off from the menu.
+- Screenshots with a frozen screen: `⌘⇧2` area, `⌘⇧1` full screen (both hotkeys configurable).
+- Drawing panel: arrows, rectangles, text, marker, pixelate. OCR (`O`), pin on top (`P`), color picker (`C`).
+- English and Russian UI.
 
-## Установка
-1. Скачай `QuickTab.zip` ниже, распакуй и перетащи `QuickTab.app` в «Программы».
-2. Приложение не нотаризовано Apple, поэтому сними карантин:
+Not yet: screen recording, scrolling capture.
+
+## Install / Установка
+1. Download `QuickTab.zip` below, unzip, move `QuickTab.app` to /Applications.
+2. The app is not notarized. Remove the quarantine flag:
    ```bash
    xattr -dr com.apple.quarantine /Applications/QuickTab.app
    ```
-   Или открой QuickTab, затем **Системные настройки → Конфиденциальность и безопасность → «Всё равно открыть»** (на macOS 15 правый клик → «Открыть» больше не помогает).
-3. Выдай «Универсальный доступ» (спросит при запуске) и «Запись экрана» (спросит при первом `⌘⇧2`). После «Записи экрана» перезапусти QuickTab.
+   or open it, then System Settings → Privacy & Security → **Open Anyway**.
+3. Grant **Accessibility**. For screenshots and previews also grant **Screen Recording** (if QuickTab isn't listed, add it with **+**), then restart QuickTab from its menu.
 
-**Обновление:** скачай новый `QuickTab.zip` и замени приложение. Разрешения сохранятся: все релизные сборки подписаны одним сертификатом.
+Если раньше стояла версия с id `local.quicktab`, выдай разрешения заново (id приложения сменился).
+Updates keep permissions: all release builds are signed with the same certificate.
 
-Требуется macOS 13+, скриншоты — macOS 14+.
+Requires macOS 13+, screenshots and previews macOS 14+.

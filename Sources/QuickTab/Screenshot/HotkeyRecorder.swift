@@ -15,19 +15,21 @@ final class HotkeyRecorder: NSObject, NSWindowDelegate {
     private var monitor: Any?
     private var completion: ((Result?) -> Void)?
 
-    func record(_ done: @escaping (Result?) -> Void) {
+    func record(title: String = NSLocalizedString("Screenshot hotkey", comment: ""),
+                current: String = ScreenshotSettings.hotkeyDescription,
+                _ done: @escaping (Result?) -> Void) {
         finish(nil)
         completion = done
 
         let p = NSPanel(contentRect: CGRect(x: 0, y: 0, width: 360, height: 120),
                         styleMask: [.titled, .closable], backing: .buffered, defer: false)
-        p.title = "Горячая клавиша скриншота"
+        p.title = title
         p.level = .floating
         p.isReleasedWhenClosed = false
         p.delegate = self
 
         let l = NSTextField(wrappingLabelWithString:
-            "Нажми новое сочетание\n(сейчас: \(ScreenshotSettings.hotkeyDescription))\n\nEsc — отмена")
+            String(format: NSLocalizedString("Press a new shortcut\n(current: %@)\n\nEsc — cancel", comment: ""), current))
         l.alignment = .center
         l.font = .systemFont(ofSize: 14)
         l.frame = CGRect(x: 20, y: 15, width: 320, height: 90)
@@ -50,11 +52,11 @@ final class HotkeyRecorder: NSObject, NSWindowDelegate {
         let mods = e.modifierFlags.intersection(ScreenshotSettings.modMask)
         let isFunction = ScreenshotSettings.functionKeys[e.keyCode] != nil
         if mods.isEmpty && !isFunction {
-            label?.stringValue = "Нужен хотя бы один модификатор:\n⌘  ⌥  ⌃  ⇧\n(или клавиша F1–F20)\n\nEsc — отмена"
+            label?.stringValue = NSLocalizedString("At least one modifier is required:\n⌘  ⌥  ⌃  ⇧\n(or a key F1–F20)\n\nEsc — cancel", comment: "")
             return
         }
         if e.keyCode == 48 && (mods == .option || mods == .command || mods == [.option, .shift] || mods == [.command, .shift]) {
-            label?.stringValue = "Это сочетание занято переключателем окон.\nПопробуй другое.\n\nEsc — отмена"
+            label?.stringValue = NSLocalizedString("This shortcut is used by the window switcher.\nTry another one.\n\nEsc — cancel", comment: "")
             return
         }
         finish(Result(keyCode: Int(e.keyCode), mods: mods, name: ScreenshotSettings.keyName(for: e.keyCode)))

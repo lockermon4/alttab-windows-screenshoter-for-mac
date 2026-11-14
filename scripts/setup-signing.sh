@@ -37,7 +37,7 @@ echo "Сейчас macOS спросит пароль, чтобы доверят�
 security add-trusted-cert -r trustRoot -p codeSign -k "${KEYCHAIN}" "${TMP}/cert.pem"
 
 # Убираем старые записи от ad-hoc сборок, чтобы они не мешали.
-tccutil reset Accessibility local.quicktab >/dev/null 2>&1 || true
-tccutil reset ScreenCapture local.quicktab >/dev/null 2>&1 || true
+tccutil reset Accessibility io.github.lockermon4.quicktab >/dev/null 2>&1 || true
+tccutil reset ScreenCapture io.github.lockermon4.quicktab >/dev/null 2>&1 || true
 
 echo "Готово. Теперь собирай как обычно: ./scripts/build-app.sh --install"

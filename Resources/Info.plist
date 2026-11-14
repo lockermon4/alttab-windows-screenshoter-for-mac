@@ -7,7 +7,7 @@
     <key>CFBundleDisplayName</key>
     <string>QuickTab</string>
     <key>CFBundleIdentifier</key>
-    <string>local.quicktab</string>
+    <string>io.github.lockermon4.quicktab</string>
     <key>CFBundleExecutable</key>
     <string>QuickTab</string>
     <key>CFBundleIconFile</key>
@@ -15,9 +15,9 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.1.0</string>
+    <string>1.0.0</string>
     <key>CFBundleVersion</key>
-    <string>2</string>
+    <string>1</string>
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
     <key>LSUIElement</key>
@@ -25,6 +25,13 @@
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSAccessibilityUsageDescription</key>
-    <string>QuickTab нужен Универсальный доступ, чтобы видеть окна и переключаться между ними.</string>
+    <string>QuickTab needs Accessibility access to see windows and switch between them.</string>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>en</string>
+        <string>ru</string>
+    </array>
 </dict>
 </plist>
