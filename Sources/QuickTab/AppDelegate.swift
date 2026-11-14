@@ -15,8 +15,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        ScreenshotSettings.registerDefaults()
         setupStatusItem()
         applyModifier()
+        tap.onScreenshot = { ScreenshotController.shared.capture() }
+        applyScreenshotHotkey()
+        NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification,
+                                               object: nil, queue: .main) { _ in
+            ScreenshotController.shared.screensChanged()
+        }
         // Превью включены, а разрешения нет (например, его сбросили) — попросить снова.
         if Previews.shared.enabled { Previews.shared.requestPermission() }
 
@@ -64,6 +71,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         tap.modifier = m
         controller.modifier = m
         SkyLight.setSystemCommandTab(enabled: !useCommand)
+    }
+
+    private func applyScreenshotHotkey() {
+        if ScreenshotSettings.enabled && ScreenshotController.shared.isSupported {
+            tap.screenshotHotkey = HotkeyTap.Combo(
+                keyCode: Int64(ScreenshotSettings.keyCode),
+                flags: CGEventFlags(rawValue: UInt64(ScreenshotSettings.mods.rawValue)))
+        } else {
+            tap.screenshotHotkey = nil
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -119,6 +136,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             menu.addItem(.separator())
         }
 
+        addScreenshotItems(previewHintShown: Previews.shared.enabled && !Previews.shared.hasPermission)
+
         let login = NSMenuItem(title: "Запускать при входе", action: #selector(toggleLogin), keyEquivalent: "")
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
         login.target = self
@@ -126,6 +145,110 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Выйти", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         statusItem.menu = menu
+    }
+
+    // MARK: - Скриншоты
+
+    private func addScreenshotItems(previewHintShown: Bool) {
+        let shots = ScreenshotController.shared
+        guard shots.isSupported else { return }
+        func item(_ title: String, _ action: Selector?) -> NSMenuItem {
+            let i = NSMenuItem(title: title, action: action, keyEquivalent: "")
+            i.target = self
+            menu.addItem(i)
+            return i
+        }
+        let toggle = item("Скриншоты со стоп-кадром", #selector(toggleScreenshots))
+        toggle.state = ScreenshotSettings.enabled ? .on : .off
+        if ScreenshotSettings.enabled {
+            let hk = ScreenshotSettings.hotkeyDescription
+            _ = item("   Сделать скриншот   \(hk)", #selector(takeScreenshot))
+            _ = item("   Горячая клавиша: \(hk) — изменить…", #selector(changeScreenshotHotkey))
+
+            let after = NSMenuItem(title: "   После выделения", action: nil, keyEquivalent: "")
+            let sub = NSMenu()
+            let modes: [(AfterSelect, String)] = [
+                (.copy, "Сразу копировать"),
+                (.save, "Копировать и сохранить в папку"),
+                (.editor, "Открывать панель рисования"),
+            ]
+            for (mode, title) in modes {
+                let i = NSMenuItem(title: title, action: #selector(setAfterSelect(_:)), keyEquivalent: "")
+                i.representedObject = mode.rawValue
+                i.state = ScreenshotSettings.after == mode ? .on : .off
+                i.target = self
+                sub.addItem(i)
+            }
+            after.submenu = sub
+            menu.addItem(after)
+
+            _ = item("   Папка: \(ScreenshotSettings.saveDir.lastPathComponent) — изменить…", #selector(chooseScreenshotFolder))
+            _ = item("   Открыть папку со скриншотами", #selector(openScreenshotFolder))
+            if !shots.hasPermission && !previewHintShown {
+                _ = item("   ⚠️ Разрешить «Запись экрана»…", #selector(openScreenRecording))
+                _ = item("   Перезапустить QuickTab (после выдачи разрешения)", #selector(relaunch))
+            }
+        }
+        menu.addItem(.separator())
+    }
+
+    @objc private func toggleScreenshots() {
+        ScreenshotSettings.enabled.toggle()
+        if ScreenshotSettings.enabled && !ScreenshotController.shared.hasPermission {
+            Previews.shared.requestPermission()
+        }
+        applyScreenshotHotkey()
+        rebuildMenu()
+    }
+
+    @objc private func takeScreenshot() {
+        // Даём меню закрыться, чтобы оно не попало в кадр.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            ScreenshotController.shared.capture()
+        }
+    }
+
+    @objc private func changeScreenshotHotkey() {
+        tap.screenshotHotkey = nil // пока записываем — старое сочетание не срабатывает
+        HotkeyRecorder.shared.record { [weak self] result in
+            if let r = result {
+                ScreenshotSettings.keyCode = r.keyCode
+                ScreenshotSettings.mods = r.mods
+                ScreenshotSettings.keyName = r.name
+                Toast.show("Скриншот: \(ScreenshotSettings.hotkeyDescription)")
+            }
+            self?.applyScreenshotHotkey()
+            self?.rebuildMenu()
+        }
+    }
+
+    @objc private func setAfterSelect(_ sender: NSMenuItem) {
+        if let raw = sender.representedObject as? String, let mode = AfterSelect(rawValue: raw) {
+            ScreenshotSettings.after = mode
+        }
+        rebuildMenu()
+    }
+
+    @objc private func chooseScreenshotFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.prompt = "Выбрать"
+        panel.message = "Куда сохранять скриншоты"
+        panel.directoryURL = ScreenshotSettings.saveDir
+        NSApp.activate(ignoringOtherApps: true)
+        if panel.runModal() == .OK, let url = panel.url {
+            ScreenshotSettings.saveDir = url
+        }
+        rebuildMenu()
+    }
+
+    @objc private func openScreenshotFolder() {
+        let dir = ScreenshotSettings.saveDir
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        NSWorkspace.shared.open(dir)
     }
 
     @objc private func useOption() { useCommand = false; rebuildMenu() }

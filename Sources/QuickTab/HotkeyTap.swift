@@ -9,6 +9,21 @@ final class HotkeyTap {
     }
 
     var onAction: ((Action) -> Void)?
+    /// Горячая клавиша скриншота (вызывается на главном потоке).
+    var onScreenshot: (() -> Void)?
+
+    struct Combo: Equatable {
+        let keyCode: Int64
+        let flags: CGEventFlags
+    }
+
+    /// Сочетание для скриншота; nil — выключено. Пишется с главного потока, читается в колбэке.
+    var screenshotHotkey: Combo? {
+        get { lock.lock(); defer { lock.unlock() }; return _screenshot }
+        set { lock.lock(); _screenshot = newValue; lock.unlock() }
+    }
+    private var _screenshot: Combo?
+    private static let modMask: CGEventFlags = [.maskCommand, .maskShift, .maskAlternate, .maskControl]
 
     /// Модификатор переключателя. Пишется с главного потока, читается в колбэке.
     var modifier: CGEventFlags {
@@ -71,6 +86,13 @@ final class HotkeyTap {
 
         case .keyDown:
             let key = event.getIntegerValueField(.keyboardEventKeycode)
+            if !active, let hk = screenshotHotkey, key == hk.keyCode,
+               flags.intersection(HotkeyTap.modMask) == hk.flags {
+                if event.getIntegerValueField(.keyboardEventAutorepeat) == 0 {
+                    DispatchQueue.main.async { [weak self] in self?.onScreenshot?() }
+                }
+                return nil
+            }
             if key == Key.tab && flags.contains(mod) && flags.intersection(other).isEmpty {
                 let reverse = flags.contains(.maskShift)
                 if active {
@@ -92,6 +114,8 @@ final class HotkeyTap {
 
         case .keyUp:
             let key = event.getIntegerValueField(.keyboardEventKeycode)
+            if let hk = screenshotHotkey, key == hk.keyCode,
+               flags.intersection(HotkeyTap.modMask) == hk.flags { return nil }
             if key == Key.tab && flags.contains(mod) { return nil }
             if active && [Key.escape, Key.ret, Key.left, Key.right, Key.up, Key.down].contains(key) { return nil }
             return pass

@@ -13,6 +13,7 @@ let package = Package(
                 .linkedFramework("ApplicationServices"),
                 .linkedFramework("ServiceManagement"),
                 .linkedFramework("ScreenCaptureKit"),
+                .linkedFramework("Vision"),
             ]
         )
     ]
