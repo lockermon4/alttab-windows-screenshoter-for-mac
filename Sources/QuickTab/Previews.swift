@@ -29,10 +29,23 @@ final class Previews {
 
     var hasPermission: Bool { CGPreflightScreenCaptureAccess() }
 
+    /// Запросить «Запись экрана». Заодно делает пробный запрос к ScreenCaptureKit —
+    /// именно он гарантированно добавляет QuickTab в список в Настройках
+    /// (одного CGRequestScreenCaptureAccess после сброса разрешений бывает мало).
+    func requestPermission() {
+        guard !hasPermission else { return }
+        CGRequestScreenCaptureAccess()
+        if #available(macOS 14.0, *) {
+            Task.detached {
+                _ = try? await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
+            }
+        }
+    }
+
     func setEnabled(_ on: Bool) {
         UserDefaults.standard.set(on, forKey: key)
         if on {
-            if !hasPermission { CGRequestScreenCaptureAccess() }
+            requestPermission()
         } else {
             cache.removeAll()
             capturedAt.removeAll()

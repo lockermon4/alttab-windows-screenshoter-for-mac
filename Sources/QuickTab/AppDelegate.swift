@@ -1,7 +1,7 @@
 import AppKit
 import ServiceManagement
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let tap = HotkeyTap()
     private let controller = SwitcherController()
     private var statusItem: NSStatusItem!
@@ -17,6 +17,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupStatusItem()
         applyModifier()
+        // Превью включены, а разрешения нет (например, его сбросили) — попросить снова.
+        if Previews.shared.enabled { Previews.shared.requestPermission() }
 
         let opts = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
         if AXIsProcessTrustedWithOptions(opts) {
@@ -75,11 +77,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let img = NSImage(systemSymbolName: "rectangle.stack", accessibilityDescription: "QuickTab")
         img?.isTemplate = true
         statusItem.button?.image = img
+        menu.delegate = self // пункты пересобираются при каждом открытии — состояние всегда свежее
         rebuildMenu()
     }
 
+    private let menu = NSMenu()
+
+    func menuNeedsUpdate(_ menu: NSMenu) { rebuildMenu() }
+
     private func rebuildMenu() {
-        let menu = NSMenu()
+        menu.removeAllItems()
         let status = NSMenuItem(title: started ? "QuickTab работает" : "Нужен «Универсальный доступ»…",
                                 action: started ? nil : #selector(openAccessibility), keyEquivalent: "")
         status.target = self
@@ -102,9 +109,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             prev.target = self
             menu.addItem(prev)
             if Previews.shared.enabled && !Previews.shared.hasPermission {
-                let hint = NSMenuItem(title: "   Разрешить «Запись экрана»…", action: #selector(openScreenRecording), keyEquivalent: "")
+                let hint = NSMenuItem(title: "   ⚠️ Разрешить «Запись экрана»…", action: #selector(openScreenRecording), keyEquivalent: "")
                 hint.target = self
                 menu.addItem(hint)
+                let restart = NSMenuItem(title: "   Перезапустить QuickTab (после выдачи разрешения)", action: #selector(relaunch), keyEquivalent: "")
+                restart.target = self
+                menu.addItem(restart)
             }
             menu.addItem(.separator())
         }
@@ -128,9 +138,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openScreenRecording() {
+        Previews.shared.requestPermission()
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
             NSWorkspace.shared.open(url)
         }
+    }
+
+    @objc private func relaunch() {
+        let path = Bundle.main.bundlePath
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/bin/sh")
+        task.arguments = ["-c", "sleep 0.5; open \"$0\"", path]
+        try? task.run()
+        NSApp.terminate(nil)
     }
 
     @objc private func toggleLogin() {
