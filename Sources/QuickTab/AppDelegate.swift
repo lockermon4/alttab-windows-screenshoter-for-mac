@@ -51,14 +51,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                                                object: nil, queue: .main) { _ in
             ScreenshotController.shared.screensChanged()
         }
-        // Превью включены, а разрешения нет (например, его сбросили) — попросить снова.
-        // Скриншоты включены по умолчанию — без этого на чистой установке QuickTab даже не попадает в список.
-        if Previews.shared.enabled || (ScreenshotSettings.enabled && ScreenshotController.shared.isSupported) {
-            Previews.shared.requestPermission()
+        // Ничего не запрашиваем при запуске: разрешения выдаются по шагам в окне настройки.
+        let needsScreen = (Previews.shared.enabled || (ScreenshotSettings.enabled && ScreenshotController.shared.isSupported))
+            && !PermissionsWindow.screenGrantedAtLaunch
+        if (!AXIsProcessTrusted() || needsScreen) && !UserDefaults.standard.bool(forKey: PermissionsWindow.doneKey) {
+            PermissionsWindow.shared.show()
         }
 
-        let opts = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-        if AXIsProcessTrustedWithOptions(opts) {
+        if AXIsProcessTrusted() {
             startIfNeeded()
         } else {
             // Ждём, пока пользователь выдаст «Универсальный доступ».
@@ -142,7 +142,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func rebuildMenu() {
         menu.removeAllItems()
         let status = NSMenuItem(title: started ? NSLocalizedString("QuickTab is running", comment: "") : NSLocalizedString("Accessibility access required…", comment: ""),
-                                action: started ? nil : #selector(openAccessibility), keyEquivalent: "")
+                                action: started ? nil : #selector(showPermissions), keyEquivalent: "")
         status.target = self
         menu.addItem(status)
 
@@ -153,6 +153,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(.separator())
         let login = item(NSLocalizedString("Launch at login", comment: ""), #selector(toggleLogin), in: menu)
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
+        item(NSLocalizedString("Permissions…", comment: ""), #selector(showPermissions), in: menu)
         menu.addItem(NSMenuItem(title: NSLocalizedString("Quit QuickTab", comment: ""), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         statusItem.menu = menu
     }
@@ -365,7 +366,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    @objc private func relaunch() {
+    @objc private func relaunch() { Self.relaunch() }
+
+    static func relaunch() {
         let path = Bundle.main.bundlePath
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/bin/sh")
@@ -387,9 +390,5 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         rebuildMenu()
     }
 
-    @objc private func openAccessibility() {
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
-            NSWorkspace.shared.open(url)
-        }
-    }
+    @objc private func showPermissions() { PermissionsWindow.shared.show() }
 }

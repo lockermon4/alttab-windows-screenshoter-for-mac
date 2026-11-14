@@ -74,3 +74,17 @@
 "Reset Screen Recording permission…" = "Сбросить разрешение «Запись экрана»…";
 "Full-screen screenshot: %@" = "Скриншот экрана: %@";
 "Full-screen screenshot hotkey" = "Сочетание для снимка всего экрана";
+
+/* Окно настройки разрешений */
+"Set up QuickTab" = "Настройка QuickTab";
+"Accessibility" = "Универсальный доступ";
+"Needed to switch windows and catch hotkeys." = "Нужен, чтобы переключать окна и ловить сочетания клавиш.";
+"Needed for screenshots and window previews." = "Нужна для скриншотов и превью окон.";
+"If QuickTab isn't in the list, click + and choose QuickTab from Applications." = "Если QuickTab нет в списке, нажмите + и выберите QuickTab в папке «Программы».";
+"Open Settings" = "Открыть настройки";
+"Grant" = "Разрешить";
+"Restart QuickTab" = "Перезапустить QuickTab";
+"Done" = "Готово";
+"Granted" = "Разрешено";
+"Not granted" = "Не разрешено";
+"Permissions…" = "Разрешения…";

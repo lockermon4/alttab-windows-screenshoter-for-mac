@@ -4,7 +4,7 @@
 
 **Alt+Tab как в Windows + скриншотер как Lightshot для macOS.**
 
-Лёгкий переключатель окон для macOS в стиле Windows Alt+Tab: личная минималистичная версия.
+Лёгкий переключатель окон для macOS в стиле Windows Alt+Tab.
 
 **Возможности:** переключатель окон по `⌥Tab` / `⌘Tab` · необязательные превью окон · скриншоты со стоп-кадром · рисование поверх скриншота · распознавание текста (OCR) · закрепление скриншота поверх окон · пипетка цвета.
 Переключатель и скриншотер включаются и выключаются **независимо** в меню (иконка в строке меню): можно пользоваться только одним из них.
@@ -21,14 +21,32 @@ QuickTab is a lightweight macOS menu-bar app: a Windows-style window switcher pl
 - Freeze-frame screenshots (default `⌘⇧2`): drawing tools, text recognition (OCR), pin on top of other windows, color picker, copy or save to a folder.
 - The switcher and the screenshot tool are enabled and disabled independently from the menu-bar icon.
 
+**Two ways to run it**
+
+| | Accessibility only | Accessibility + Screen Recording |
+|---|---|---|
+| Window switcher (`⌥Tab` / `⌘Tab`) | yes, with app icons and window titles | yes |
+| Window previews in the switcher | no | yes (optional, macOS 14+) |
+| Screenshots: area, full screen, drawing, OCR, pin | no | yes (macOS 14+) |
+
+Screen Recording is optional: skip it in the setup window if you only want the switcher, and grant it later via **Permissions…**.
+
 **Install**
 1. Download `QuickTab.zip` from [Releases](https://github.com/lockermon4/alttab-windows-screenshoter-for-mac/releases/latest) and move `QuickTab.app` to `/Applications`.
 2. The app is not notarized, so Gatekeeper blocks the first launch. Either right-click `QuickTab.app` → **Open** → **Open**; or on macOS 15+ try to open it, then **System Settings → Privacy & Security → Open Anyway**; or run `xattr -dr com.apple.quarantine /Applications/QuickTab.app`.
-3. Grant **Accessibility** (System Settings → Privacy & Security → Accessibility → QuickTab). For previews and screenshots also grant **Screen Recording**, then restart QuickTab from its menu. If QuickTab isn't in the Screen Recording list, click **+** below the list and pick `/Applications/QuickTab.app`. If AltTab or another switcher also uses ⌥Tab, quit it.
+3. QuickTab uses two permissions: **Accessibility** (required: window switching, hotkeys) and **Screen Recording** (optional: screenshots, window previews — see the table above). On first launch the **Set up QuickTab** window walks you through them one by one: Accessibility, then Screen Recording, then **Restart QuickTab**. You can reopen it from the menu: **Permissions…**. If QuickTab isn't in a list in System Settings, click **+** below the list and pick `/Applications/QuickTab.app`. If AltTab or another switcher also uses ⌥Tab, quit it.
 
 Build from source: `./scripts/setup-signing.sh` (once) and `./scripts/build-app.sh --install` (needs Xcode or Command Line Tools).
 
-- **Для переключателя хватает «Универсального доступа».** По умолчанию в панели иконки и заголовки окон; «Запись экрана» нужна только для необязательных превью и скриншотов.
+- **Два режима работы**, в зависимости от выданных разрешений:
+
+  | | Только «Универсальный доступ» | «Универсальный доступ» + «Запись экрана» |
+  |---|---|---|
+  | Переключатель окон (`⌥Tab` / `⌘Tab`) | да, с иконками приложений и заголовками окон | да |
+  | Превью окон в переключателе | нет | да (по желанию, macOS 14+) |
+  | Скриншоты: область, весь экран, рисование, OCR, закреп | нет | да (macOS 14+) |
+
+  «Универсальный доступ» нужен всегда. «Запись экрана» — по желанию: если нужен только переключатель, пропусти этот шаг в окне настройки, а выдать можно позже через «Разрешения…».
 - **Не зависает при частом нажатии.**
   - Список окон всегда лежит готовым в кэше.
   - Клавиатуру слушает отдельный поток.
@@ -36,8 +54,8 @@ Build from source: `./scripts/setup-signing.sh` (once) and `./scripts/build-app.
   - Окна поднимаются через WindowServer.
   - Каждое новое нажатие отменяет недоделанное предыдущее, поэтому подвисшее приложение не тормозит переключатель.
 - Быстрое `⌥Tab` сразу переключает на предыдущее окно, панель даже не рисуется.
-- **Превью окон — по желанию** (галочка в меню, по умолчанию выключена, macOS 14+). Для них нужна «Запись экрана»: без неё macOS не отдаёт картинку чужих окон ни одной программе. Снимки делаются в фоне и кэшируются, поэтому переключатель от них не тормозит.
-- **Встроенные скриншоты со стоп-кадром** (как Lightshot/Shottr, macOS 14+). Нажал горячую клавишу (по умолчанию `⌘⇧2`, меняется в меню), экран замирает в этот момент, выделяешь область, и она уже в буфере обмена. «Запись экрана» нужна только этой необязательной функции, сам переключатель окон без неё обходится. Отключается в меню.
+- **Превью окон — по желанию** (галочка в меню, по умолчанию выключена, macOS 14+). Для них нужна «Запись экрана». Снимки делаются в фоне и кэшируются, поэтому переключатель от них не тормозит.
+- **Встроенные скриншоты со стоп-кадром** (как Lightshot/Shottr, macOS 14+). Нажал горячую клавишу (по умолчанию `⌘⇧2`, меняется в меню), экран замирает в этот момент, выделяешь область, и она уже в буфере обмена. Нужна «Запись экрана». Отключается в меню.
 
 ## Управление
 
@@ -110,10 +128,8 @@ macOS привязывает разрешение к подписи прилож
      ```bash
      xattr -dr com.apple.quarantine /Applications/QuickTab.app
      ```
-4. **Разрешения.** macOS попросит «Универсальный доступ», он нужен для переключателя окон:
-   **Системные настройки → Конфиденциальность и безопасность → Универсальный доступ → QuickTab ✓**.
-   Для превью окон и скриншотов дополнительно нужна **«Запись экрана»** (там же). После выдачи разрешения перезапусти QuickTab (пункт меню «Перезапустить QuickTab»).
-   Если QuickTab нет в списке «Записи экрана», нажми **+** под списком и выбери `/Applications/QuickTab.app`. Если AltTab или другой переключатель тоже занимает ⌥Tab, закрой его.
+4. **Разрешения.** **«Универсальный доступ»** нужен обязательно (переключение окон, горячие клавиши), **«Запись экрана»** — по желанию (скриншоты, превью окон; см. таблицу «Два режима работы» выше). При первом запуске откроется окно **«Настройка QuickTab»** и проведёт по ним по очереди: сначала «Универсальный доступ», потом «Запись экрана», затем **«Перезапустить QuickTab»**. Открыть его снова можно из меню: **«Разрешения…»**.
+   Если QuickTab нет в списке в Системных настройках, нажми **+** под списком и выбери `/Applications/QuickTab.app`. Если AltTab или другой переключатель тоже занимает ⌥Tab, закрой его.
 
 **Обновление:** скачай новый `QuickTab.zip` и замени приложение в «Программах». Разрешения сохранятся: все релизные сборки подписаны одним сертификатом. Если macOS всё же снова просит разрешения, см. [Если просит «Запись экрана», хотя она включена](#если-просит-запись-экрана-хотя-она-включена).
 
