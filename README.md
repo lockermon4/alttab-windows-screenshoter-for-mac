@@ -33,9 +33,8 @@
 Нужны Xcode или Command Line Tools (`xcode-select --install`).
 ```bash
 git clone https://github.com/lockermon4/quicktab-without-screenrecordingpermission-.git QuickTab && cd QuickTab
-./scripts/build-app.sh
-cp -R build/QuickTab.app /Applications/
-open /Applications/QuickTab.app
+./scripts/setup-signing.sh      # один раз: личный сертификат, чтобы разрешения не слетали
+./scripts/build-app.sh --install
 ```
 
 ### Вариант 2: готовая сборка
@@ -47,11 +46,22 @@ xattr -dr com.apple.quarantine /Applications/QuickTab.app
 При первом запуске macOS попросит «Универсальный доступ»:
 **Системные настройки → Конфиденциальность и безопасность → Универсальный доступ → QuickTab ✓**.
 
-### Чтобы разрешение не слетало после пересборки
-Приложение подписано ad-hoc, а macOS привязывает разрешение к подписи. После каждой пересборки его приходится выдавать заново. Чтобы этого не было, один раз создай свой сертификат:
-1. «Связка ключей» → меню «Ассистент сертификации» → «Создать сертификат…».
-2. Имя `QuickTab Dev`, тип «Подписание кода».
-3. Собирай так: `SIGN_IDENTITY="QuickTab Dev" ./scripts/build-app.sh`.
+### Чтобы разрешения не слетали после пересборки
+По умолчанию приложение подписывается ad-hoc, и подпись меняется при каждой сборке. macOS привязывает разрешения к подписи. Поэтому старая запись в «Универсальном доступе» остаётся включённой, но уже не работает.
+
+Чтобы этого не было, **один раз** создай личный сертификат (macOS спросит пароль):
+```bash
+./scripts/setup-signing.sh
+```
+После этого собирай и ставь одной командой, разрешения сохранятся:
+```bash
+./scripts/build-app.sh --install
+```
+
+Если разрешения уже «сломались», сбрось их и выдай заново:
+```bash
+tccutil reset Accessibility local.quicktab; tccutil reset ScreenCapture local.quicktab
+```
 
 ## Устройство
 

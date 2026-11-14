@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 # Собирает QuickTab.app в ./build
-# SIGN_IDENTITY="QuickTab Dev" ./scripts/build-app.sh  — подписать своим сертификатом
-# (тогда разрешение «Универсальный доступ» не слетает после каждой пересборки).
+#   ./scripts/build-app.sh            — только собрать
+#   ./scripts/build-app.sh --install  — собрать, положить в /Applications и перезапустить
+# Подпись: если есть сертификат «QuickTab Dev» (см. scripts/setup-signing.sh) — используется он,
+# иначе ad-hoc. Можно задать явно: SIGN_IDENTITY="Имя" ./scripts/build-app.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
+
+INSTALL=0
+[ "${1:-}" = "--install" ] && INSTALL=1
 
 # Универсальная сборка (arm64 + x86_64) требует полного Xcode.
 # С одними Command Line Tools собираем только под текущий Mac.
@@ -24,5 +29,26 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/QuickTab" "$APP/Contents/MacOS/QuickTab"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 
+if [ -z "${SIGN_IDENTITY:-}" ] && security find-certificate -c "QuickTab Dev" >/dev/null 2>&1; then
+    SIGN_IDENTITY="QuickTab Dev"
+fi
 codesign --force --sign "${SIGN_IDENTITY:--}" --identifier local.quicktab "$APP"
-echo "Готово: $APP"
+
+if [ -z "${SIGN_IDENTITY:-}" ] && [ -z "${CI:-}" ]; then
+    # Ad-hoc подпись меняется при каждой сборке: старая запись в «Универсальном доступе»
+    # остаётся включённой, но уже не работает. Сбрасываем её, чтобы macOS спросила заново.
+    tccutil reset Accessibility local.quicktab >/dev/null 2>&1 || true
+    tccutil reset ScreenCapture local.quicktab >/dev/null 2>&1 || true
+    echo "⚠️  Подпись ad-hoc — разрешения придётся выдать заново."
+    echo "   Чтобы больше так не было, один раз запусти: ./scripts/setup-signing.sh"
+fi
+echo "Готово: $APP (подпись: ${SIGN_IDENTITY:-ad-hoc})"
+
+if [ "$INSTALL" = 1 ]; then
+    pkill -x QuickTab 2>/dev/null || true
+    sleep 0.5
+    rm -rf /Applications/QuickTab.app
+    cp -R "$APP" /Applications/
+    open /Applications/QuickTab.app
+    echo "Установлено и запущено: /Applications/QuickTab.app"
+fi
