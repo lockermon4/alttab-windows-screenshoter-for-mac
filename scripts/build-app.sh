@@ -29,6 +29,18 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/QuickTab" "$APP/Contents/MacOS/QuickTab"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 
+# Иконка: Resources/AppIcon-1024.png → AppIcon.icns (sips + iconutil есть в любой macOS)
+if [ -f Resources/AppIcon-1024.png ]; then
+    ICONSET=$(mktemp -d)/AppIcon.iconset
+    mkdir -p "$ICONSET"
+    for s in 16 32 128 256 512; do
+        sips -z $s $s Resources/AppIcon-1024.png --out "$ICONSET/icon_${s}x${s}.png" >/dev/null
+        d=$((s * 2))
+        sips -z $d $d Resources/AppIcon-1024.png --out "$ICONSET/icon_${s}x${s}@2x.png" >/dev/null
+    done
+    iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
+fi
+
 if [ -z "${SIGN_IDENTITY:-}" ] && security find-certificate -c "QuickTab Dev" >/dev/null 2>&1; then
     SIGN_IDENTITY="QuickTab Dev"
 fi

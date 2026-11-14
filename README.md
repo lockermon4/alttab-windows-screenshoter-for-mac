@@ -1,5 +1,9 @@
 # QuickTab
 
+<img src="Resources/AppIcon-1024.png" width="128" alt="">
+
+**Alt+Tab как в Windows + скриншотер как Lightshot для macOS.**
+
 Лёгкий переключатель окон для macOS в стиле Windows Alt+Tab: личная минималистичная версия.
 
 - **Не нужна запись экрана.** Нет миниатюр окон, только иконки и заголовки. Требуется одно разрешение: «Универсальный доступ».
@@ -75,7 +79,7 @@ macOS привязывает разрешение к подписи прилож
 ### Вариант 1: собрать самому (рекомендуется)
 Нужны Xcode или Command Line Tools (`xcode-select --install`).
 ```bash
-git clone https://github.com/lockermon4/quicktab-without-screenrecordingpermission-.git QuickTab && cd QuickTab
+git clone https://github.com/lockermon4/alttab-windows-screenshoter-for-mac.git QuickTab && cd QuickTab
 ./scripts/setup-signing.sh      # один раз: личный сертификат, чтобы разрешения не слетали
 ./scripts/build-app.sh --install
 ```
