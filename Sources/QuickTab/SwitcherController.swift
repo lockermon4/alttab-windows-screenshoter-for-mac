@@ -17,9 +17,24 @@ final class SwitcherController {
             self?.index = i
             self?.commit()
         }
+        Previews.shared.onUpdate = { [weak self] id, img in self?.panel.setPreview(id, img) }
     }
 
-    func update(_ list: [WindowInfo]) { windows = list }
+    private var warmedUp = false
+
+    func update(_ list: [WindowInfo]) {
+        windows = list
+        Previews.shared.prune(keeping: Set(list.map(\.id)))
+        if !warmedUp && !list.isEmpty {
+            warmedUp = true
+            warmUpPreviews()
+        }
+    }
+
+    /// Сделать снимки заранее, чтобы при первом ⌥Tab превью уже были.
+    func warmUpPreviews() {
+        Previews.shared.refresh(Array(windows.prefix(30)))
+    }
 
     func handle(_ action: HotkeyTap.Action) {
         switch action {
@@ -40,6 +55,8 @@ final class SwitcherController {
         let frontPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
         let start = (list[0].pid == frontPID && !list[0].isMinimized) ? 1 : 0
         index = reverse ? list.count - 1 : min(start, list.count - 1)
+        // Снимки обновляются в фоне; панель покажет кэш и подменит картинки по мере готовности.
+        Previews.shared.refresh(Array(list.prefix(30)))
 
         showWork?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.show() }
@@ -54,7 +71,7 @@ final class SwitcherController {
             commit()
             return
         }
-        panel.present(s, selected: index)
+        panel.present(s, selected: index, previews: Previews.shared.enabled && Previews.shared.hasPermission)
     }
 
     private func step(_ d: Int) {

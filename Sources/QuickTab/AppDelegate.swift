@@ -96,6 +96,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(cmd)
         menu.addItem(.separator())
 
+        if Previews.shared.isSupported {
+            let prev = NSMenuItem(title: "Показывать превью окон", action: #selector(togglePreviews), keyEquivalent: "")
+            prev.state = Previews.shared.enabled ? .on : .off
+            prev.target = self
+            menu.addItem(prev)
+            if Previews.shared.enabled && !Previews.shared.hasPermission {
+                let hint = NSMenuItem(title: "   Разрешить «Запись экрана»…", action: #selector(openScreenRecording), keyEquivalent: "")
+                hint.target = self
+                menu.addItem(hint)
+            }
+            menu.addItem(.separator())
+        }
+
         let login = NSMenuItem(title: "Запускать при входе", action: #selector(toggleLogin), keyEquivalent: "")
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
         login.target = self
@@ -107,6 +120,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func useOption() { useCommand = false; rebuildMenu() }
     @objc private func useCmd() { useCommand = true; rebuildMenu() }
+
+    @objc private func togglePreviews() {
+        Previews.shared.setEnabled(!Previews.shared.enabled)
+        if Previews.shared.enabled { controller.warmUpPreviews() }
+        rebuildMenu()
+    }
+
+    @objc private func openScreenRecording() {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+            NSWorkspace.shared.open(url)
+        }
+    }
 
     @objc private func toggleLogin() {
         do {
