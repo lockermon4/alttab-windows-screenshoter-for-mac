@@ -30,7 +30,7 @@
 ### Вариант 1: собрать самому (рекомендуется)
 Нужны Xcode или Command Line Tools (`xcode-select --install`).
 ```bash
-git clone https://github.com/<you>/QuickTab.git && cd QuickTab
+git clone https://github.com/lockermon4/quicktab-without-screenrecordingpermission-.git QuickTab && cd QuickTab
 ./scripts/build-app.sh
 cp -R build/QuickTab.app /Applications/
 open /Applications/QuickTab.app
