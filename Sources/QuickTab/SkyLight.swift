@@ -8,11 +8,19 @@ import ApplicationServices
 @_silgen_name("GetProcessForPID") @discardableResult
 private func qt_GetProcessForPID(_ pid: pid_t, _ psn: UnsafeMutablePointer<ProcessSerialNumber>) -> OSStatus
 
-@_silgen_name("_SLPSSetFrontProcessWithOptions") @discardableResult
-private func qt_SLPSSetFrontProcessWithOptions(_ psn: UnsafeMutablePointer<ProcessSerialNumber>, _ wid: CGWindowID, _ mode: UInt32) -> CGError
+// SkyLight — приватный фреймворк, его нет в SDK, поэтому грузим функции в рантайме.
+private let skyLight = dlopen("/System/Library/PrivateFrameworks/SkyLight.framework/SkyLight", RTLD_LAZY)
 
-@_silgen_name("SLPSPostEventRecordTo") @discardableResult
-private func qt_SLPSPostEventRecordTo(_ psn: UnsafeMutablePointer<ProcessSerialNumber>, _ bytes: UnsafeMutablePointer<UInt8>) -> CGError
+private typealias SetFrontFn = @convention(c) (UnsafeMutablePointer<ProcessSerialNumber>, CGWindowID, UInt32) -> CGError
+private typealias PostEventFn = @convention(c) (UnsafeMutablePointer<ProcessSerialNumber>, UnsafeMutablePointer<UInt8>) -> CGError
+
+private func load<T>(_ name: String, as: T.Type) -> T? {
+    guard let skyLight, let sym = dlsym(skyLight, name) else { return nil }
+    return unsafeBitCast(sym, to: T.self)
+}
+
+private let qt_SLPSSetFrontProcessWithOptions = load("_SLPSSetFrontProcessWithOptions", as: SetFrontFn.self)
+private let qt_SLPSPostEventRecordTo = load("SLPSPostEventRecordTo", as: PostEventFn.self)
 
 @_silgen_name("CGSSetSymbolicHotKeyEnabled") @discardableResult
 private func qt_CGSSetSymbolicHotKeyEnabled(_ hotKey: Int32, _ enabled: Bool) -> CGError
@@ -22,8 +30,8 @@ enum SkyLight {
 
     static func makeFrontmost(pid: pid_t, windowID: CGWindowID) {
         var psn = ProcessSerialNumber()
-        if qt_GetProcessForPID(pid, &psn) == 0 {
-            qt_SLPSSetFrontProcessWithOptions(&psn, windowID, userGenerated)
+        if let setFront = qt_SLPSSetFrontProcessWithOptions, qt_GetProcessForPID(pid, &psn) == 0 {
+            _ = setFront(&psn, windowID, userGenerated)
             makeKeyWindow(&psn, windowID)
         } else {
             // Запасной путь через публичный AX.
@@ -48,8 +56,9 @@ enum SkyLight {
         withUnsafeBytes(of: &pt) { src in
             for i in 0..<16 { bytes[0x20 + i] = src[i] }
         }
+        guard let post = qt_SLPSPostEventRecordTo else { return }
         bytes.withUnsafeMutableBufferPointer { buf in
-            _ = qt_SLPSPostEventRecordTo(&psn, buf.baseAddress!)
+            _ = post(&psn, buf.baseAddress!)
         }
     }
 
