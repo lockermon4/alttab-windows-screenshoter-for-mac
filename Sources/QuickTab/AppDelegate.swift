@@ -188,8 +188,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 _ = item("   ⚠️ Разрешить «Запись экрана»…", #selector(openScreenRecording))
                 _ = item("   Перезапустить QuickTab (после выдачи разрешения)", #selector(relaunch))
             }
+            _ = item("   Сбросить разрешение «Запись экрана»…", #selector(resetScreenRecording))
         }
         menu.addItem(.separator())
+    }
+
+    @objc private func resetScreenRecording() {
+        ScreenshotController.shared.resetPermission()
     }
 
     @objc private func toggleScreenshots() {

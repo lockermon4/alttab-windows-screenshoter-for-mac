@@ -31,14 +31,8 @@ final class ScreenshotController {
     func capture() {
         guard ScreenshotSettings.enabled, overlays.isEmpty, !capturing else { return }
         guard #available(macOS 14.0, *) else { return }
-        guard hasPermission else {
-            Previews.shared.requestPermission()
-            Toast.show("Разреши QuickTab «Запись экрана» и перезапусти его")
-            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
-                NSWorkspace.shared.open(url)
-            }
-            return
-        }
+        // Не верим CGPreflightScreenCaptureAccess: он бывает «нет», когда снимать можно.
+        // Просто пробуем снять, а помощь показываем, только если не вышло.
         capturing = true
         previousApp = NSWorkspace.shared.frontmostApplication
         var scales: [CGDirectDisplayID: CGFloat] = [:]
@@ -53,8 +47,8 @@ final class ScreenshotController {
     private func present(_ shots: [CGDirectDisplayID: CGImage]) {
         capturing = false
         guard !shots.isEmpty else {
-            NSSound.beep()
-            Toast.show("Не удалось снять экран. Проверь «Запись экрана» и перезапусти QuickTab")
+            previousApp = nil
+            showPermissionHelp()
             return
         }
         for screen in NSScreen.screens {
@@ -67,6 +61,83 @@ final class ScreenshotController {
         for w in overlays { w.orderFrontRegardless() }
         main?.makeKeyAndOrderFront(nil)
         if let main { main.makeFirstResponder(main.overlayView) }
+    }
+
+    // MARK: - Разрешение «Запись экрана»
+
+    private var permissionTimer: Timer?
+
+    private func showPermissionHelp() {
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = "QuickTab не может снять экран"
+        alert.informativeText = """
+        Нужно разрешение «Запись экрана».
+
+        Если QuickTab уже включён в списке, но не работает, значит запись осталась от старой сборки \
+        (у неё была другая подпись). Нажми «Сбросить и разрешить заново», затем включи QuickTab \
+        в открывшихся Настройках. QuickTab перезапустится сам.
+        """
+        alert.addButton(withTitle: "Сбросить и разрешить заново")
+        alert.addButton(withTitle: "Открыть Настройки")
+        alert.addButton(withTitle: "Отмена")
+        switch alert.runModal() {
+        case .alertFirstButtonReturn: resetPermission()
+        case .alertSecondButtonReturn:
+            Previews.shared.requestPermission()
+            openScreenRecordingSettings()
+            waitForPermissionAndRelaunch()
+        default: break
+        }
+    }
+
+    /// Удалить устаревшую запись в «Записи экрана», попросить заново и ждать, пока включат.
+    func resetPermission() {
+        let id = Bundle.main.bundleIdentifier ?? "local.quicktab"
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/tccutil")
+        task.arguments = ["reset", "ScreenCapture", id]
+        try? task.run()
+        task.waitUntilExit()
+        Previews.shared.requestPermission()
+        if #available(macOS 14.0, *) {
+            Task { await ScreenGrabber.shared.invalidate() }
+        }
+        openScreenRecordingSettings()
+        waitForPermissionAndRelaunch()
+    }
+
+    private func openScreenRecordingSettings() {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    /// Как только разрешение появится — перезапуск (ScreenCaptureKit видит его только после перезапуска).
+    private func waitForPermissionAndRelaunch() {
+        permissionTimer?.invalidate()
+        var ticks = 0
+        permissionTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] t in
+            ticks += 1
+            if CGPreflightScreenCaptureAccess() {
+                t.invalidate()
+                self?.permissionTimer = nil
+                Toast.show("Разрешение получено, перезапускаю QuickTab…")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) { Self.relaunch() }
+            } else if ticks > 300 {
+                t.invalidate()
+                self?.permissionTimer = nil
+            }
+        }
+    }
+
+    static func relaunch() {
+        let path = Bundle.main.bundlePath
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/bin/sh")
+        task.arguments = ["-c", "sleep 0.5; open \"$0\"", path]
+        try? task.run()
+        NSApp.terminate(nil)
     }
 
     /// Выделение может быть только на одном мониторе.

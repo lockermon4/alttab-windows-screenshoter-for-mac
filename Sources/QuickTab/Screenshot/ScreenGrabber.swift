@@ -21,17 +21,23 @@ actor ScreenGrabber {
         displays = []
     }
 
+    /// Снимки по мониторам. Пустой результат — снять не удалось (обычно нет «Записи экрана»).
     func captureAll(scales: [CGDirectDisplayID: CGFloat]) async -> [CGDirectDisplayID: CGImage] {
         let known = Set(displays.map(\.displayID))
         if Date().timeIntervalSince(fetchedAt) > 120 || !Set(scales.keys).isSubset(of: known) {
-            if let content = try? await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true) {
+            do {
+                let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
                 displays = content.displays
                 fetchedAt = Date()
+            } catch {
+                NSLog("QuickTab: SCShareableContent error: \(error)")
+                displays = []
+                return [:]
             }
         }
         let targets = displays.filter { scales[$0.displayID] != nil }
 
-        return await withTaskGroup(of: (CGDirectDisplayID, CGImage?).self) { group in
+        let result = await withTaskGroup(of: (CGDirectDisplayID, CGImage?).self) { group in
             for display in targets {
                 let scale = scales[display.displayID] ?? 2
                 group.addTask {
@@ -41,8 +47,13 @@ actor ScreenGrabber {
                     cfg.height = Int((CGFloat(display.height) * scale).rounded())
                     cfg.showsCursor = false
                     cfg.captureResolution = .best
-                    let img = try? await SCScreenshotManager.captureImage(contentFilter: filter, configuration: cfg)
-                    return (display.displayID, img)
+                    do {
+                        let img = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: cfg)
+                        return (display.displayID, img)
+                    } catch {
+                        NSLog("QuickTab: captureImage error: \(error)")
+                        return (display.displayID, nil)
+                    }
                 }
             }
             var out: [CGDirectDisplayID: CGImage] = [:]
@@ -51,5 +62,7 @@ actor ScreenGrabber {
             }
             return out
         }
+        if result.isEmpty { invalidate() }
+        return result
     }
 }
