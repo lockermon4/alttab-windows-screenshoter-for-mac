@@ -5,7 +5,16 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-ARCHS=${ARCHS:-"--arch arm64 --arch x86_64"}
+# Универсальная сборка (arm64 + x86_64) требует полного Xcode.
+# С одними Command Line Tools собираем только под текущий Mac.
+if [ -z "${ARCHS+x}" ]; then
+    if [ -x /Library/Developer/SharedFrameworks/XCBuild.framework/Versions/A/Support/xcbuild ] \
+       || xcode-select -p 2>/dev/null | grep -q "Xcode.*\.app"; then
+        ARCHS="--arch arm64 --arch x86_64"
+    else
+        ARCHS=""
+    fi
+fi
 swift build -c release $ARCHS
 BIN_DIR=$(swift build -c release $ARCHS --show-bin-path)
 
